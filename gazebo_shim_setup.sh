@@ -4,7 +4,8 @@ cd gazebo_shim_deps
 git clone https://github.com/intel/gazebo-realsense
 cd gazebo-realsense
 mv ./models/realsense_camera/model.config ./models/realsense_camera/model.config.old
-cp ./../../URDFs/rs_l515_550.sdf ./models/realsense_camera/model.config
+mv ./models/realsense_camera/model.sdf ./models/realsense_camera/model.sdf.old
+cp ./../../URDFs/rs_l515_550.sdf ./models/realsense_camera/model.sdf
 mkdir build
 cd build
 cmake ..
