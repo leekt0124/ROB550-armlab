@@ -109,10 +109,13 @@ class StateMachine():
               Make sure you respect estop signal
         """
         self.status_message = "State: Execute - Executing motion plan"
+        for i in range(len(self.waypoints)):
+            self.rxarm.set_positions(self.waypoints[i])
+            rospy.sleep(3.0)
         self.next_state = "idle"
 
-    def calibrate(self):
-        """!
+        def calibrate(self):
+            """!
         @brief      Gets the user input to perform the calibration
         """
         self.current_state = "calibrate"
@@ -145,7 +148,7 @@ class StateMachineThread(QThread):
     @brief      Runs the state machine
     """
     updateStatusMessage = pyqtSignal(str)
-    
+
     def __init__(self, state_machine, parent=None):
         """!
         @brief      Constructs a new instance.
