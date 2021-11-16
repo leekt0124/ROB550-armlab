@@ -222,7 +222,32 @@ class Gui(QMainWindow):
             z = self.camera.DepthFrameRaw[pt.y()][pt.x()]
             self.ui.rdoutMousePixels.setText("(%.0f,%.0f,%.0f)" %
                                              (pt.x(), pt.y(), z))
-            self.ui.rdoutMouseWorld.setText("(-,-,-)")
+
+            uv_coords = np.array([float(pt.x()), float(pt.y()), float(1)])
+            #print(uv_coords.shape)
+            # print(z)
+            intrinsic_inv = np.linalg.inv(self.camera.intrinsic_matrix)
+
+
+            # c_coord intrinsic_inv[0] *
+            # print(uv_coords.shape)
+            # print(intrinsic_inv.shape)
+
+            c_coords =  np.matmul(intrinsic_inv, uv_coords)
+            c_coords *= z
+            # print(c_coords.shape)
+            c_coords = np.append(c_coords, [float(1)], axis=0)
+            #print(c_coords)
+            # print(c_coords.shape)
+            w_coords = np.matmul(self.camera.extrinsic_matrix, c_coords)
+            # print(w_coords.shape)
+
+            self.ui.rdoutMouseWorld.setText("(%.0f,%.0f,%.0f)" %
+                                             (w_coords[0], w_coords[1], w_coords[2]))
+            # print("hi")
+            # self.ui.rdoutMouseWorld.setText("(%.0f,%.0f,%.0f)" %
+            #                                  (8, 8, 5))
+
 
     def calibrateMousePress(self, mouse_event):
         """!
@@ -245,6 +270,8 @@ class Gui(QMainWindow):
         self.ui.chk_directcontrol.setChecked(False)
         self.rxarm.enable_torque()
         self.sm.set_next_state('initialize_rxarm')
+
+
 
 
 ### TODO: Add ability to parse POX config file as well

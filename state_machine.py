@@ -5,6 +5,7 @@ from PyQt4.QtCore import (QThread, Qt, pyqtSignal, pyqtSlot, QTimer)
 import time
 import numpy as np
 import rospy
+import cv2
 
 class StateMachine():
     """!
@@ -114,15 +115,46 @@ class StateMachine():
             rospy.sleep(3.0)
         self.next_state = "idle"
 
-        def calibrate(self):
-            """!
+    def calibrate(self):
+        """!
         @brief      Gets the user input to perform the calibration
         """
         self.current_state = "calibrate"
         self.next_state = "idle"
 
         """TODO Perform camera calibration routine here"""
+        tag_position_c = np.zeros((4,3))
+        print('Calibration')
+        if len(self.camera.tag_detections.detections) < 4:
+            self.status_message = "Not enough tags"
+        else:
+            for i in range(4):
+                id1 = self.camera.tag_detections.detections[i].id[0] - 1
+                tag_position_c[id1,0] = self.camera.tag_detections.detections[i].pose.pose.pose.position.x
+                tag_position_c[id1,1] = self.camera.tag_detections.detections[i].pose.pose.pose.position.y
+                tag_position_c[id1,2] = self.camera.tag_detections.detections[i].pose.pose.pose.position.z
+                print(tag_position_c[id1,2])
+        tag_position_c = np.transpose(tag_position_c).astype(np.float32)
+        tag_position_i = np.dot(self.camera.intrinsic_matrix,tag_position_c).astype(np.float32)
+        for i in range(4):
+            tag_position_i[:, i] /=  tag_position_c[2,i]
+
+        tag_position_i = tag_position_i
         self.status_message = "Calibration - Completed Calibration"
+
+        (success, rot_vec, trans_vec) = cv2.solvePnP(self.camera.tag_locations.astype(np.float32), np.transpose(tag_position_i[:2, :]).astype(np.float32), self.camera.intrinsic_matrix,self.camera.dist_coefficient, flags = cv2.SOLVEPNP_ITERATIVE)
+
+        #print("translational",trans_vec)
+        #print(success)
+
+        dst = cv2.Rodrigues(rot_vec)
+        dst = np.array(dst[0])
+        # print(dst)
+        trans_vec = np.squeeze(trans_vec)
+        self.camera.extrinsic_matrix[:3, :3] = dst
+        self.camera.extrinsic_matrix[:3, 3] = trans_vec
+
+        print(self.camera.extrinsic_matrix)
 
     """ TODO """
     def detect(self):
