@@ -33,14 +33,19 @@ class Camera():
 
         # mouse clicks & calibration variables
         self.cameraCalibrated = False
-        self.intrinsic_matrix = np.array([])
-        self.extrinsic_matrix = np.array([])
+        self.intrinsic_matrix = np.array([[904.3, 0, 696.0], [0, 906.1, 361.9], [0, 0, 1]])
+        self.extrinsic_matrix = np.array([[1, 0, 0, -20], [0, -1, 0, 180], [0, 0, -1, 973], [0, 0, 0, 1]]).astype(np.float32)
         self.last_click = np.array([0, 0])
         self.new_click = False
         self.rgb_click_points = np.zeros((5, 2), int)
         self.depth_click_points = np.zeros((5, 2), int)
         self.tag_detections = np.array([])
-        self.tag_locations = [[-250, -25], [250, -25], [250, 275]]
+        self.dist_coefficient = np.array([[0.17931543290615082, -0.5406785011291504, -0.0007807965739630163, -0.0004374352574814111, 0.4746035635471344]
+])
+        """
+            ADDED ZERO TO THE END OF EACH POINT IN THE NP ARRAY TO MAKE IT A 4X3 MATRIX
+        """
+        self.tag_locations = np.array([[-250, -25, 0], [250, -25, 0], [250, 275, 0], [-250, 275, 0]])
         """ block info """
         self.block_contours = np.array([])
         self.block_detections = np.array([])
@@ -203,6 +208,10 @@ class TagDetectionListener:
 
     def callback(self, data):
         self.camera.tag_detections = data
+
+
+        #print(self.camera.tag_detections.detections[0].pose.pose.pose)
+        #print('--------')
         #for detection in data.detections:
         #print(detection.id[0])
         #print(detection.pose.pose.pose.position)
