@@ -60,6 +60,7 @@ def get_transform_from_dh(a, alpha, d, theta):
 
     @return     The 4x4 transform matrix.
     """
+
     pass
 
 
@@ -134,4 +135,6 @@ def IK_geometric(dh_params, pose):
     @return     All four possible joint configurations in a numpy array 4x4 where each row is one possible joint
                 configuration
     """
+
+
     pass
