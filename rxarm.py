@@ -71,8 +71,8 @@ class RXArm(InterbotixRobot):
         self.initialized = False
         # Cmd
         self.position_cmd = None
-        self.moving_time = 2.0
-        self.accel_time = 0.5
+        self.moving_time = 2
+        self.accel_time = 0.2
         # Feedback
         self.position_fb = None
         self.velocity_fb = None
@@ -239,7 +239,7 @@ class RXArmThread(QThread):
         @param      parent  The parent
         @details    TODO: set any additional initial parameters (like PID gains) here
         """
-        self.pid_gains={rxarm.joint_names[0]:[200,10,5000],rxarm.joint_names[1]:[500,10,0],rxarm.joint_names[2]:[500,10,0],rxarm.joint_names[3]:[500,10,0],rxarm.joint_names[4]:[200,10,5000],rxarm.joint_names[5]:[200,10,5000]}
+        self.pid_gains={rxarm.joint_names[0]:[200,1000,5000],rxarm.joint_names[1]:[500,1000,0],rxarm.joint_names[2]:[500,1000,0],rxarm.joint_names[3]:[500,10,0],rxarm.joint_names[4]:[200,10,5000],rxarm.joint_names[5]:[200,10,5000]}
         # self.pid_gains={rxarm.joint_names[0]:[2000,0,3600],rxarm.joint_names[1]:[5000,0,0],rxarm.joint_names[2]:[5000,0,0],rxarm.joint_names[3]:[4800,0,0],rxarm.joint_names[4]:[640,0,3600],rxarm.joint_names[5]:[640,0,3600]}
         QThread.__init__(self, parent=parent)
         self.rxarm = rxarm

@@ -6,6 +6,12 @@ import time
 import numpy as np
 import rospy
 import cv2
+import csv
+
+class WaypointRecording():
+    def __init__(self):
+        self.arm_coords = []
+        self.gripper_state = []
 
 class StateMachine():
     """!
@@ -27,6 +33,8 @@ class StateMachine():
         self.status_message = "State: Idle"
         self.current_state = "idle"
         self.next_state = "idle"
+        self.gripper_state = 1
+        """
         self.waypoints = [
             [-np.pi/2,       -0.5,      -0.3,            0.0,       0.0],
             [0.75*-np.pi/2,   0.5,      0.3,      0.0,       np.pi/2],
@@ -38,6 +46,8 @@ class StateMachine():
             [0.75*np.pi/2,   -0.5,     -0.3,     0.0,       np.pi/2],
             [np.pi/2,         0.5,     0.3,      0.0,     0.0],
             [0.0,             0.0,     0.0,      0.0,     0.0]]
+        """
+        self.waypoints = WaypointRecording()
 
     def set_next_state(self, state):
         """!
@@ -109,10 +119,37 @@ class StateMachine():
         TODO: Implement this function to execute a waypoint plan
               Make sure you respect estop signal
         """
+        #self.rxarm.set_moving_time(2.0)
+        k_move = 2.5
+        k_accel = 1.0/5
+        min_move_time = 0.5
         self.status_message = "State: Execute - Executing motion plan"
-        for i in range(len(self.waypoints)):
-            self.rxarm.set_positions(self.waypoints[i])
-            rospy.sleep(3.0)
+        for i in range(len(self.waypoints.arm_coords)):
+            current_position = self.rxarm.get_positions() # Get current position
+            next_position = self.waypoints.arm_coords[i] # Get next position
+            difference = np.absolute(np.subtract(current_position, next_position)) # Difference between current and next position
+            print('Difference Position')
+            print(difference)
+            max_angle_disp = np.amax(difference)# Find highest angle displacement
+            print('Max Displacement')
+            print(max_angle_disp)
+            moving_time = k_move * max_angle_disp# Multiply the above by constant to get time
+            if (moving_time < min_move_time):
+                moving_time = min_move_time
+            print('Moving Time')
+            print(moving_time)
+            accel_time = k_accel * moving_time
+            print('Acceleration Time')
+            print(accel_time)
+            self.rxarm.set_moving_time(moving_time)# Do set moving time
+            self.rxarm.set_accel_time(accel_time)
+            self.rxarm.set_positions(next_position)
+            rospy.sleep(moving_time)
+            if(self.waypoints.gripper_state[i]):
+                self.rxarm.open_gripper()
+            else:
+                self.rxarm.close_gripper()
+            rospy.sleep(1.0)
         self.next_state = "idle"
 
     def calibrate(self):
@@ -174,6 +211,34 @@ class StateMachine():
             self.status_message = "State: Failed to initialize the rxarm!"
             rospy.sleep(5)
         self.next_state = "idle"
+
+    def add_waypoint(self):
+        self.waypoints.arm_coords.append(self.rxarm.get_positions())
+        self.waypoints.gripper_state.append(self.gripper_state)
+        print(self.waypoints.arm_coords)
+
+    def add_gripper(self, state):
+        self.gripper_state = state
+
+    def save_waypoints(self):
+        # Write out to file
+        with open("teach_repeat.csv", "wb") as file:
+            writer = csv.writer(file)
+            for i in range(len(self.waypoints.arm_coords)):
+                writer.writerow(self.waypoints.arm_coords[i][0])
+                writer.writerow(self.waypoints.gripper_state[i][0])
+                print(type(self.waypoints.arm_coords))
+                print(self.waypoints.arm_coords[i])
+                print(self.waypoints.arm_coords[i][0])
+    def load_waypoints(self):
+        with open("teach_repeat.csv", "r") as file:
+            reader = csv.reader(file, delimeter = '\t')
+            for row in reader:
+                print(row)
+
+    def clear_waypoints(self):
+        self.waypoints.arm_coords = []
+        self.waypoints.gripper_state = []
 
 class StateMachineThread(QThread):
     """!
