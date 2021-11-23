@@ -253,7 +253,7 @@ class Gui(QMainWindow):
             c_coords = np.append(c_coords, [float(1)], axis=0)
             #print(c_coords)
             # print(c_coords.shape)
-            w_coords = np.matmul(self.camera.extrinsic_matrix, c_coords)
+            w_coords = np.matmul(np.linalg.inv(self.camera.extrinsic_matrix), c_coords)
             # print(w_coords.shape)
 
             self.ui.rdoutMouseWorld.setText("(%.0f,%.0f,%.0f)" %
