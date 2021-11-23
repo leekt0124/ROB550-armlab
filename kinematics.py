@@ -55,33 +55,7 @@ def FK_dh(dh_params, joint_angles, link):
     homgen_3_4 = get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3])
     i = 4
     homgen_4_5 = get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3])
-    # i = 1
-    # homgen_1_2 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
-    #                     [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
-    #                     [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
-    #                     [0, 0, 0, 1]])
-    # i = 2
-    # homgen_2_3 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
-    #                     [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
-    #                     [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
-    #                     [0, 0, 0, 1]])
-    # i = 3
-    # homgen_3_4 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
-    #                     [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
-    #                     [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
-    #                     [0, 0, 0, 1]])
-    # i = 4
-    # homgen_4_5 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
-    #                     [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
-    #                     [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
-    #                     [0, 0, 0, 1]])
-    # i = 5
-    # homgen_5_6 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
-    #                     [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
-    #                     [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
-    #                     [0, 0, 0, 1]])
 
-    # H = (((((homgen_0_1 @ homgen_1_2) @ homgen_2_3) @ homgen_3_4) @ homgen_4_5) @ homgen_5_6)
     H = homgen_0_1.dot(homgen_1_2).dot(homgen_2_3).dot(homgen_3_4).dot(homgen_4_5)
     print(np.matrix(H))
     return H
@@ -118,7 +92,21 @@ def get_euler_angles_from_T(T):
 
     @return     The euler angles from T.
     """
-    pass
+    euler = np.zeros((3, 1))
+    R23 = T[1, 2]
+    R13 = T[0, 2]
+    R33 = T[2, 2]
+    R32 = T[2, 1]
+    R31 = T[2, 0]
+    a = np.arctan2(R23, R13)
+    b = np.arctan2((1 - R33 ** 2) ** 0.5, R33)
+    y = np.arctan2(R32, -R31)
+    print(euler.shape)
+    euler[0, 0] = a
+    euler[1, 0] = b
+    euler[2, 0] = y
+    
+    return euler
 
 
 def get_pose_from_T(T):
@@ -132,7 +120,12 @@ def get_pose_from_T(T):
 
     @return     The pose from T.
     """
-    pass
+    phi = get_euler_angles_from_T(T)[1, 0]
+    pose = T[:, 3:4]
+    print("shape of pose = ", pose.shape)
+    pose[3, 0] = phi
+
+    return pose
 
 
 def FK_pox(joint_angles, m_mat, s_lst):
