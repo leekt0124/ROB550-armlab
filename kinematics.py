@@ -44,39 +44,48 @@ def FK_dh(dh_params, joint_angles, link):
 
     @return     a transformation matrix representing the pose of the desired link
     """
-        i = 0
-        homgen_0_1 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
-                            [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
-                            [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
-                            [0, 0, 0, 1]])
-        i = 1
-        homgen_1_2 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
-                            [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
-                            [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
-                            [0, 0, 0, 1]])
-        i = 2
-        homgen_2_3 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
-                            [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
-                            [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
-                            [0, 0, 0, 1]])
-        i = 3
-        homgen_3_4 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
-                            [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
-                            [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
-                            [0, 0, 0, 1]])
-        i = 4
-        homgen_4_5 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
-                            [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
-                            [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
-                            [0, 0, 0, 1]])
-        i = 5
-        homgen_5_6 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
-                            [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
-                            [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
-                            [0, 0, 0, 1]])
+    # print("In FK_dh, dh_params = ", dh_params)
+    i = 0
+    homgen_0_1 = get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3])
+    i = 1
+    homgen_1_2 = get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3])
+    i = 2
+    homgen_2_3 = get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3])
+    i = 3
+    homgen_3_4 = get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3])
+    i = 4
+    homgen_4_5 = get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3])
+    # i = 1
+    # homgen_1_2 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
+    #                     [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
+    #                     [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
+    #                     [0, 0, 0, 1]])
+    # i = 2
+    # homgen_2_3 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
+    #                     [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
+    #                     [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
+    #                     [0, 0, 0, 1]])
+    # i = 3
+    # homgen_3_4 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
+    #                     [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
+    #                     [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
+    #                     [0, 0, 0, 1]])
+    # i = 4
+    # homgen_4_5 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
+    #                     [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
+    #                     [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
+    #                     [0, 0, 0, 1]])
+    # i = 5
+    # homgen_5_6 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
+    #                     [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
+    #                     [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
+    #                     [0, 0, 0, 1]])
 
-        H = (((((homgen_0_1@homgen_1_2)@homgen_2_3)@homgen_3_4)@homgen_4_5)@homgen_5_6)
-        #H = np.dot(np.dot(np.dot(np.dot(np.dot(homgen_0_1, homgen_1_2)))))
+    # H = (((((homgen_0_1 @ homgen_1_2) @ homgen_2_3) @ homgen_3_4) @ homgen_4_5) @ homgen_5_6)
+    H = homgen_0_1.dot(homgen_1_2).dot(homgen_2_3).dot(homgen_3_4).dot(homgen_4_5)
+    print(np.matrix(H))
+    return H
+    # H = np.dot(np.dot(np.dot(np.dot(np.dot(homgen_0_1, homgen_1_2)))))
 
 
 def get_transform_from_dh(a, alpha, d, theta):
@@ -93,7 +102,10 @@ def get_transform_from_dh(a, alpha, d, theta):
     @return     The 4x4 transform matrix.
     """
 
-    pass
+    return np.array([[np.cos(theta), -np.sin(theta) * np.cos(alpha), np.sin(theta) * np.sin(alpha), a * np.cos(theta)],
+                            [np.sin(theta), np.cos(theta) * np.cos(alpha), -np.cos(theta) * np.sin(alpha), a * np.sin(theta)],
+                            [0, np.sin(alpha), np.cos(alpha), d],
+                            [0, 0, 0, 1]])
 
 
 def get_euler_angles_from_T(T):
@@ -168,6 +180,6 @@ def IK_geometric(dh_params, pose):
                 configuration
     """
 
-    R = np.array([[cos(phi), -sin(phi)][sin(phi), cos(phi)]])
+    # R = np.array([[cos(phi), -sin(phi)][sin(phi), cos(phi)]])
 
     pass
