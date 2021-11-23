@@ -7,7 +7,7 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 
 import argparse
 import sys
-import cv2
+#import cv2
 import numpy as np
 import rospy
 import time

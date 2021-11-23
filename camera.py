@@ -35,7 +35,7 @@ class Camera():
         self.cameraCalibrated = False
         #self.intrinsic_matrix = np.array([[904.3, 0, 696.0], [0, 906.1, 361.9], [0, 0, 1]]) # Average intrinsic_matrix
         self.intrinsic_matrix = np.array([[908.3550415039062, 0, 642.5927124023438], [0, 908.4041137695312, 353.12652587890625], [0, 0, 1]]) # Factory intrinsic_matrix
-        self.extrinsic_matrix = np.array([[1, 0, 0, -20], [0, -1, 0, 180], [0, 0, -1, 973], [0, 0, 0, 1]]).astype(np.float32)
+        self.extrinsic_matrix = np.linalg.inv(np.array([[1, 0, 0, -20], [0, -1, 0, 180], [0, 0, -1, 973], [0, 0, 0, 1]]).astype(np.float32))
         self.last_click = np.array([0, 0])
         self.new_click = False
         self.rgb_click_points = np.zeros((5, 2), int)
