@@ -9,6 +9,8 @@ import numpy as np
 # expm is a matrix exponential function
 from scipy.linalg import expm
 
+D2R = np.pi / 180.0
+R2D = 180.0 / np.pi
 
 def clamp(angle):
     """!
@@ -46,18 +48,18 @@ def FK_dh(dh_params, joint_angles, link):
     """
     # print("In FK_dh, dh_params = ", dh_params)
     i = 0
-    homgen_0_1 = get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3])
+    homgen_0_1 = get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3] + joint_angles[0])
     i = 1
-    homgen_1_2 = get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3])
+    homgen_1_2 = get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3] + joint_angles[1])
     i = 2
-    homgen_2_3 = get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3])
+    homgen_2_3 = get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3] + joint_angles[2])
     i = 3
-    homgen_3_4 = get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3])
+    homgen_3_4 = get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3] + joint_angles[3])
     i = 4
-    homgen_4_5 = get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3])
+    homgen_4_5 = get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3] + joint_angles[4])
 
     H = homgen_0_1.dot(homgen_1_2).dot(homgen_2_3).dot(homgen_3_4).dot(homgen_4_5)
-    print(np.matrix(H))
+    # print(np.matrix(H))
     return H
     # H = np.dot(np.dot(np.dot(np.dot(np.dot(homgen_0_1, homgen_1_2)))))
 
@@ -105,7 +107,7 @@ def get_euler_angles_from_T(T):
     euler[0, 0] = a
     euler[1, 0] = b
     euler[2, 0] = y
-    
+
     return euler
 
 
@@ -120,12 +122,13 @@ def get_pose_from_T(T):
 
     @return     The pose from T.
     """
-    phi = get_euler_angles_from_T(T)[1, 0]
+    phi = get_euler_angles_from_T(T)[1, 0] * R2D
     pose = T[:, 3:4]
     print("shape of pose = ", pose.shape)
     pose[3, 0] = phi
 
-    return pose
+
+    return list(pose)
 
 
 def FK_pox(joint_angles, m_mat, s_lst):
