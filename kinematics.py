@@ -44,7 +44,8 @@ def FK_dh(dh_params, joint_angles, link):
 
     @return     a transformation matrix representing the pose of the desired link
     """
-    pass
+    for angle in joint_angles[:link + 1]:
+        print("anle = ", angle)
 
 
 def get_transform_from_dh(a, alpha, d, theta):
