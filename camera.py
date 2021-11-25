@@ -162,6 +162,10 @@ class Camera():
 
         """
 
+        '''
+        BLOCK DETECTION
+        '''
+
         lower = 905
         upper = 950
 
@@ -182,8 +186,49 @@ class Camera():
         # depending on your version of OpenCV, the following line could be:
         # contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         _, self.block_contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        print(self.block_contours)
-        print(np.shape(self.block_contours))
+        #print(self.block_contours)
+        num_contours = np.shape(self.block_contours)[0]
+        print(num_contours)
+
+        '''
+        BLOCK LABELING
+        '''
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        colors = list((
+            {'id': 'red', 'color': (10, 10, 127)},
+            {'id': 'orange', 'color': (30, 75, 150)},
+            {'id': 'yellow', 'color': (30, 150, 200)},
+            {'id': 'green', 'color': (20, 60, 20)},
+            {'id': 'blue', 'color': (100, 50, 0)},
+            {'id': 'violet', 'color': (100, 40, 80)})
+        )
+
+        def retrieve_area_color(data, contour, labels):
+            mask = np.zeros(data.shape[:2], dtype="uint8")
+            cv2.drawContours(mask, [contour], -1, 255, -1)
+            mean = cv2.mean(data, mask=mask)[:3]
+            min_dist = (np.inf, None)
+            for label in labels:
+                d = np.linalg.norm(label["color"] - np.array(mean))
+                if d < min_dist[0]:
+                    min_dist = (d, label["id"])
+            return min_dist[1]
+        self.block_detections = np.zeros((num_contours,2))
+        print(np.shape(self.block_detections))
+        i = 0
+        for contour in self.block_contours:
+            color = retrieve_area_color(rgb_image, contour, colors)
+            theta = cv2.minAreaRect(contour)[2]
+            M = cv2.moments(contour)
+            cx = int(M['m10']/M['m00'])
+            cy = int(M['m01']/M['m00'])
+            cv2.putText(self.VideoFrame, color, (cx-30, cy+40), font, 1.0, (0,0,0), thickness=2)
+            cv2.putText(self.VideoFrame, str(int(theta)), (cx, cy), font, 0.5, (255,255,255), thickness=2)
+            print(color, int(theta), cx, cy)
+            self.block_detections[i,:] = [cx,cy]
+            i += 1
+
+        print(self.block_detections)
         self.processVideoFrame()
 
         #pass
