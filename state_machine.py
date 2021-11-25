@@ -211,7 +211,18 @@ class StateMachine():
 
         '''
         # Tilted plane fix
-        c_coords = np.append(tag_position_c_scaled, np.expand_dims([1, 1, 1, 1], axis = 0), axis = 0)
+        uv_coords = tag_position_i.astype(int)
+        intrinsic_inv = np.linalg.inv(self.camera.intrinsic_matrix)
+        c_coords =  np.matmul(intrinsic_inv, uv_coords)
+
+        for i in range(4):
+            tag_position_c[:, i] /=  tag_position_c[2,i]
+            z = self.camera.DepthFrameRaw[uv_coords[1,i]][uv_coords[0,i]]
+            c_coords[:,i] *= z
+
+        print(c_coords.shape)
+        print([float(1),float(1),float(1),float(1)])
+        c_coords = np.append(c_coords, [[float(1),float(1),float(1),float(1)]], axis=0)
         w_coords = np.matmul(np.linalg.inv(self.camera.extrinsic_matrix), c_coords)
         print(w_coords)
 
@@ -244,6 +255,7 @@ class StateMachine():
         print(angle)
         print(R)
         '''
+
         print(self.camera.extrinsic_matrix)
 
     """ TODO """
