@@ -27,6 +27,7 @@ class Camera():
         self.VideoFrame = np.zeros((720, 1280, 3)).astype(np.uint8)
         self.TagImageFrame = np.zeros((720, 1280, 3)).astype(np.uint8)
         self.DepthFrameRaw = np.zeros((720, 1280)).astype(np.uint16)
+        self.BlocksDetectedFrame = np.zeros((720, 1280, 3)).astype(np.uint8)
         """ Extra arrays for colormaping the depth image"""
         self.DepthFrameHSV = np.zeros((720, 1280, 3)).astype(np.uint8)
         self.DepthFrameRGB = np.array([])
@@ -92,6 +93,21 @@ class Camera():
 
         try:
             frame = cv2.resize(self.VideoFrame, (1280, 720))
+            img = QImage(frame, frame.shape[1], frame.shape[0],
+                         QImage.Format_RGB888)
+            return img
+        except:
+            return None
+
+    def convertQtBlocksDetectionFrame(self):
+        """!
+        @brief      Converts frame to format suitable for Qt
+
+        @return     QImage
+        """
+
+        try:
+            frame = cv2.resize(self.BlocksDetectedFrame, (1280, 720))
             img = QImage(frame, frame.shape[1], frame.shape[0],
                          QImage.Format_RGB888)
             return img
@@ -213,7 +229,8 @@ class Camera():
                 if d < min_dist[0]:
                     min_dist = (d, label["id"])
             return min_dist[1]
-        self.block_detections = np.zeros((num_contours,2))
+        self.block_detections = None
+        self.block_detections = np.zeros((num_contours,3))
         print(np.shape(self.block_detections))
         i = 0
         for contour in self.block_contours:
@@ -222,14 +239,19 @@ class Camera():
             M = cv2.moments(contour)
             cx = int(M['m10']/M['m00'])
             cy = int(M['m01']/M['m00'])
+            cz = self.DepthFrameRaw[cy][cx]
             cv2.putText(self.VideoFrame, color, (cx-30, cy+40), font, 1.0, (0,0,0), thickness=2)
             cv2.putText(self.VideoFrame, str(int(theta)), (cx, cy), font, 0.5, (255,255,255), thickness=2)
             print(color, int(theta), cx, cy)
-            self.block_detections[i,:] = [cx,cy]
+            self.block_detections[i,:] = [cx,cy,cz]
             i += 1
 
         print(self.block_detections)
         self.processVideoFrame()
+        cv2.rectangle(self.VideoFrame, (275,120),(1100,720), (255, 0, 0), 2)
+        cv2.rectangle(self.VideoFrame, (575,414),(723,720), (255, 0, 0), 2)
+
+        self.BlocksDetectedFrame = self.VideoFrame
 
         #pass
 
@@ -322,7 +344,7 @@ class DepthListener:
 
 
 class VideoThread(QThread):
-    updateFrame = pyqtSignal(QImage, QImage, QImage)
+    updateFrame = pyqtSignal(QImage, QImage, QImage, QImage)
 
     def __init__(self, camera, parent=None):
         QThread.__init__(self, parent=parent)
@@ -345,13 +367,15 @@ class VideoThread(QThread):
             cv2.namedWindow("Image window", cv2.WINDOW_NORMAL)
             cv2.namedWindow("Depth window", cv2.WINDOW_NORMAL)
             cv2.namedWindow("Tag window", cv2.WINDOW_NORMAL)
+            cv2.namedWindow("Blocks window", cv2.WINDOW_NORMAL)
             time.sleep(0.5)
         while True:
             rgb_frame = self.camera.convertQtVideoFrame()
             depth_frame = self.camera.convertQtDepthFrame()
             tag_frame = self.camera.convertQtTagImageFrame()
+            blocks_frame = self.camera.convertQtBlocksDetectionFrame()
             if ((rgb_frame != None) & (depth_frame != None)):
-                self.updateFrame.emit(rgb_frame, depth_frame, tag_frame)
+                self.updateFrame.emit(rgb_frame, depth_frame, tag_frame, blocks_frame)
             time.sleep(0.03)
             if __name__ == '__main__':
                 cv2.imshow(
@@ -361,6 +385,9 @@ class VideoThread(QThread):
                 cv2.imshow(
                     "Tag window",
                     cv2.cvtColor(self.camera.TagImageFrame, cv2.COLOR_RGB2BGR))
+                cv2.imshow(
+                    "Blocks window",
+                    cv2.cvtColor(self.camera.BlocksDetectedFrame, cv2.COLOR_RGB2BGR))
                 cv2.waitKey(3)
                 time.sleep(0.03)
 
