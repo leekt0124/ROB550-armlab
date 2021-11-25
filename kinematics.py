@@ -103,7 +103,7 @@ def get_euler_angles_from_T(T):
     a = np.arctan2(R23, R13)
     b = np.arctan2((1 - R33 ** 2) ** 0.5, R33)
     y = np.arctan2(R32, -R31)
-    print(euler.shape)
+    #print(euler.shape)
     euler[0, 0] = a
     euler[1, 0] = b
     euler[2, 0] = y
@@ -124,7 +124,7 @@ def get_pose_from_T(T):
     """
     phi = get_euler_angles_from_T(T)[1, 0] * R2D
     pose = T[:, 3:4]
-    print("shape of pose = ", pose.shape)
+    #print("shape of pose = ", pose.shape)
     pose[3, 0] = phi
 
 

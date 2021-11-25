@@ -156,8 +156,37 @@ class Camera():
 
                     TODO: Implement your block detector here. You will need to locate blocks in 3D space and put their XYZ
                     locations in self.block_detections
+
+                    # use self.VideoFrame
+                    # use self.DepthFrameRaw
+
         """
-        pass
+
+        lower = 905
+        upper = 950
+
+        # Image Frame
+        rgb_image = cv2.cvtColor(self.VideoFrame, cv2.COLOR_RGB2BGR)
+        cnt_image = cv2.cvtColor(self.VideoFrame, cv2.COLOR_RGB2BGR)
+        # Depth data in right format
+        depth_data = self.DepthFrameRaw
+
+        #cv2.namedWindow("Threshold window", cv2.WINDOW_NORMAL)
+        """mask out arm & outside board"""
+        mask = np.zeros_like(depth_data, dtype=np.uint8)
+        cv2.rectangle(mask, (275,120),(1100,720), 255, cv2.FILLED)
+        cv2.rectangle(mask, (575,414),(723,720), 0, cv2.FILLED)
+        cv2.rectangle(self.VideoFrame, (275,120),(1100,720), (255, 0, 0), 2)
+        cv2.rectangle(self.VideoFrame, (575,414),(723,720), (255, 0, 0), 2)
+        thresh = cv2.bitwise_and(cv2.inRange(depth_data, lower, upper), mask)
+        # depending on your version of OpenCV, the following line could be:
+        # contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        _, self.block_contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        print(self.block_contours)
+        print(np.shape(self.block_contours))
+        self.processVideoFrame()
+
+        #pass
 
     def detectBlocksInDepthImage(self):
         """!

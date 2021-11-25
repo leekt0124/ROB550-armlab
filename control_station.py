@@ -108,6 +108,8 @@ class Gui(QMainWindow):
         self.ui.btnUser9.clicked.connect(lambda: self.sm.save_waypoints())
         self.ui.btnUser10.setText('Load Waypoints From File')
         self.ui.btnUser10.clicked.connect(lambda: self.sm.load_waypoints())
+        self.ui.btnUser11.setText('Block Detector')
+        self.ui.btnUser11.clicked.connect(lambda: self.camera.blockDetector())
 
 
 
@@ -152,7 +154,7 @@ class Gui(QMainWindow):
     ### TODO: output the rest of the orientation according to the convention chosen
     @pyqtSlot(list)
     def updateEndEffectorReadout(self, pos):
-        print(self.joint_readouts)
+        #print(self.joint_readouts)
         self.ui.rdoutX.setText(str("%+.2f mm" % (pos[0])))
         self.ui.rdoutY.setText(str("%+.2f mm" % (pos[1])))
         self.ui.rdoutZ.setText(str("%+.2f mm" % (pos[2])))

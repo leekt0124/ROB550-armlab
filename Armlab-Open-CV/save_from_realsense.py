@@ -27,7 +27,7 @@ class ImageListener:
     global save_image
     global save_depth
     k = cv2.waitKey(1)
-    if k == ord('s'): # wait for 's' key to save and exit    
+    if k == ord('s'): # wait for 's' key to save and exit
       save_depth = True
       save_image = True
     if save_image == True:
@@ -54,7 +54,7 @@ class DepthListener:
     global save_image
     global save_depth
     k = cv2.waitKey(1)
-    if k == ord('s'): # wait for 's' key to save and exit    
+    if k == ord('s'): # wait for 's' key to save and exit
       save_depth = True
       save_image = True
     if save_depth == True:

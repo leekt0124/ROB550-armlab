@@ -193,7 +193,7 @@ class RXArm(InterbotixRobot):
         @return     The EE pose as [x, y, z, phi] or as needed.
         """
         joint_angles = self.get_positions()
-        print("joing_angle = ", joint_angles)
+        #print("joing_angle = ", joint_angles)
         # print("type of dh_params = ", self.dh_params)
         return get_pose_from_T(FK_dh(self.dh_params, joint_angles, 5))
 
