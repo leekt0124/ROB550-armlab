@@ -166,5 +166,32 @@ def IK_geometric(dh_params, pose):
     """
 
     # R = np.array([[cos(phi), -sin(phi)][sin(phi), cos(phi)]])
+    l1 = 200
+    l2 = 250
+    l3 = 174.15
 
-    pass
+    # dx = pose.x
+    # dy = pose.y
+    dx = pose[0]
+    dy = pose[1]
+
+    # phi = pose.phi
+    phi = pose[3]
+    phi = D2R * phi
+
+    x = dx - l3 * np.cos(phi)
+    y = dy - l3 * np.sin(phi)
+
+    r = x**2 + y**2
+    x2 = (r - l1**2 - l2**2)/(2*l1*l2)
+    y2 = np.sqrt(1 - x2**2)
+    theta2 = np.arctan2(y2,x2)
+
+    y1 = ((l1 + l2*x2)*dy - l2*y2*dx)/r
+    x1 = ((l1 + l2*x2)*dx + l2*y2*dy)/r
+    theta1 = np.arctan2(y1,x1)
+    theta3 = phi - theta1 - theta2
+
+    # dh_params[1][3] = theta1
+    # dh_params[2][3] = theta2
+    # dh_params[3][3] = theta3
