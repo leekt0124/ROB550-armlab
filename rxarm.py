@@ -55,7 +55,7 @@ class RXArm(InterbotixRobot):
     """!
     @brief      This class describes a RXArm wrapper class for the rx200
     """
-    def __init__(self, dh_config_file=None):
+    def __init__(self, dh_config_file="./config/rx200_dh.csv"):
         """!
         @brief      Constructs a new instance.
 
@@ -246,8 +246,12 @@ class RXArmThread(QThread):
         @param      parent  The parent
         @details    TODO: set any additional initial parameters (like PID gains) here
         """
-        self.pid_gains={rxarm.joint_names[0]:[200,1000,5000],rxarm.joint_names[1]:[500,1000,0],rxarm.joint_names[2]:[500,1000,0],rxarm.joint_names[3]:[500,1000,0],rxarm.joint_names[4]:[200,1000,5000],rxarm.joint_names[5]:[200,10,5000]}
-        # self.pid_gains={rxarm.joint_names[0]:[2000,0,3600],rxarm.joint_names[1]:[5000,0,0],rxarm.joint_names[2]:[5000,0,0],rxarm.joint_names[3]:[4800,0,0],rxarm.joint_names[4]:[640,0,3600],rxarm.joint_names[5]:[640,0,3600]}
+        self.pid_gains={rxarm.joint_names[0]:[9000,0,3600],rxarm.joint_names[1]:[16000,0,0],rxarm.joint_names[2]:[5000,3000,0],rxarm.joint_names[3]:[800,1000,0],rxarm.joint_names[4]:[640,1000,3600],rxarm.joint_names[5]:[640,10,3600]}
+        # self.pid_gains={rxarm.joint_names[0]:[640,0,3600],rxarm.joint_names[1]:[800,0,0],rxarm.joint_names[2]:[800,0,0],rxarm.joint_names[3]:[800,0,0],rxarm.joint_names[4]:[640,0,3600],rxarm.joint_names[5]:[640,0,3600]}
+
+        for joint_name in self.pid_gains.keys():
+            rxarm.set_joint_position_pid_params(joint_name, self.pid_gains[joint_name])
+
         QThread.__init__(self, parent=parent)
         self.rxarm = rxarm
         rospy.Subscriber('/rx200/joint_states', JointState, self.callback)
@@ -279,8 +283,8 @@ if __name__ == '__main__':
     armThread = RXArmThread(rxarm)
     armThread.start()
 
-    for joint_name in armThread.pid_gains.keys():
-        rxarm.set_joint_position_pid_params(joint_name, armThread.pid_gains[joint_name])
+    # for joint_name in armThread.pid_gains.keys():
+    #     rxarm.set_joint_position_pid_params(joint_name, armThread.pid_gains[joint_name])
 
     try:
         joint_positions = [math.radians(9.05), math.radians(15.47), math.radians(-10.99), math.radians(-40.25), 0.00]
