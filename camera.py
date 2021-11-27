@@ -190,6 +190,7 @@ class Camera():
         # TODO: Add blur to create better contour detection? Try to use blur to smooth inside of block but leave outside alone
         rgb_image = cv2.cvtColor(self.VideoFrame, cv2.COLOR_RGB2BGR)
         # TODO: Find HSV image and process that
+        hsv_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2HSV)
         cnt_image = cv2.cvtColor(self.VideoFrame, cv2.COLOR_RGB2BGR)
         # Depth data in right format
         depth_data = self.DepthFrameRaw
@@ -206,7 +207,7 @@ class Camera():
         # contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         # TODO: Store hierarchies to parse through subcontours and remove them
-        _, self.block_contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        _, self.block_contours, cnt_hierarchies = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         #print(self.block_contours)
         num_contours = np.shape(self.block_contours)[0]
@@ -220,6 +221,8 @@ class Camera():
         # - Sample colors around the board
         # - Generate heat map of colors
         # - Find individual thresholds for colors
+        
+        # RGB Color List
         colors = list((
             {'id': 'red', 'color': (10, 10, 127)},
             {'id': 'orange', 'color': (30, 75, 150)},
@@ -229,11 +232,24 @@ class Camera():
             {'id': 'violet', 'color': (100, 40, 80)})
         )
 
-            self.block_detections = None
+        # HSV Color List
+        # TODO: Populate this
+        hsv_colors = list((
+            {'id': 'red', 'color': (10, 10, 127)},
+            {'id': 'orange', 'color': (30, 75, 150)},
+            {'id': 'yellow', 'color': (30, 150, 200)},
+            {'id': 'green', 'color': (20, 60, 20)},
+            {'id': 'blue', 'color': (100, 50, 0)},
+            {'id': 'violet', 'color': (100, 40, 80)})
+        )
+
+        self.block_detections = None
         self.block_detections = np.zeros((num_contours,3))
         print(np.shape(self.block_detections))
         i = 0
         for contour in self.block_contours:
+            # TODO: Call HSV once that is populated
+            # TODO: Improve color detection? Figure out individual thresholds
             color = retrieve_area_color(rgb_image, contour, colors)
             theta = cv2.minAreaRect(contour)[2]
             M = cv2.moments(contour)
@@ -253,6 +269,7 @@ class Camera():
         #cv2.rectangle(self.VideoFrame, (275,120),(1100,720), (255, 0, 0), 2)
         #cv2.rectangle(self.VideoFrame, (575,414),(723,720), (255, 0, 0), 2)
 
+    # TODO: Improve distance thresholding by color maybe? At least print probability
     def retrieve_area_color(data, contour, labels):
         mask = np.zeros(data.shape[:2], dtype="uint8")
         cv2.drawContours(mask, [contour], -1, 255, -1)
