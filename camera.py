@@ -183,9 +183,10 @@ class Camera():
         '''
 
         lower = 905
-        upper = 950
+        upper = 954
 
         # Image Frame
+        self.BlocksDetectedFrame = self.VideoFrame
         rgb_image = cv2.cvtColor(self.VideoFrame, cv2.COLOR_RGB2BGR)
         cnt_image = cv2.cvtColor(self.VideoFrame, cv2.COLOR_RGB2BGR)
         # Depth data in right format
@@ -194,10 +195,10 @@ class Camera():
         #cv2.namedWindow("Threshold window", cv2.WINDOW_NORMAL)
         """mask out arm & outside board"""
         mask = np.zeros_like(depth_data, dtype=np.uint8)
-        cv2.rectangle(mask, (275,120),(1100,720), 255, cv2.FILLED)
-        cv2.rectangle(mask, (575,414),(723,720), 0, cv2.FILLED)
-        cv2.rectangle(self.VideoFrame, (275,120),(1100,720), (255, 0, 0), 2)
-        cv2.rectangle(self.VideoFrame, (575,414),(723,720), (255, 0, 0), 2)
+        cv2.rectangle(mask, (275,120),(1100,715), 255, cv2.FILLED)
+        cv2.rectangle(mask, (575,414),(736,720), 0, cv2.FILLED)
+        cv2.rectangle(self.BlocksDetectedFrame , (275,120),(1100,715), (255, 0, 0), 2)
+        cv2.rectangle(self.BlocksDetectedFrame , (575,414),(736,720), (255, 0, 0), 2)
         thresh = cv2.bitwise_and(cv2.inRange(depth_data, lower, upper), mask)
         # depending on your version of OpenCV, the following line could be:
         # contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -229,6 +230,20 @@ class Camera():
                 if d < min_dist[0]:
                     min_dist = (d, label["id"])
             return min_dist[1]
+
+        def u_v_d_to_world(u,v,d):
+            z = d
+
+            uv_coords = np.array([float(u), float(v), float(1)])
+            intrinsic_inv = np.linalg.inv(self.intrinsic_matrix)
+
+            c_coords =  np.matmul(intrinsic_inv, uv_coords)
+            c_coords *= z
+            c_coords = np.append(c_coords, [float(1)], axis=0)
+            w_coords = np.matmul(np.linalg.inv(self.extrinsic_matrix), c_coords)
+            return w_coords[:3]
+
+
         self.block_detections = None
         self.block_detections = np.zeros((num_contours,3))
         print(np.shape(self.block_detections))
@@ -240,20 +255,19 @@ class Camera():
             cx = int(M['m10']/M['m00'])
             cy = int(M['m01']/M['m00'])
             cz = self.DepthFrameRaw[cy][cx]
-            cv2.putText(self.VideoFrame, color, (cx-30, cy+40), font, 1.0, (0,0,0), thickness=2)
-            cv2.putText(self.VideoFrame, str(int(theta)), (cx, cy), font, 0.5, (255,255,255), thickness=2)
+            cv2.putText(self.BlocksDetectedFrame , color, (cx-30, cy+40), font, 1.0, (0,0,0), thickness=2)
+            cv2.putText(self.BlocksDetectedFrame , str(int(theta)), (cx, cy), font, 0.5, (255,255,255), thickness=2)
             print(color, int(theta), cx, cy)
-            self.block_detections[i,:] = [cx,cy,cz]
+            self.block_detections[i,:] = u_v_d_to_world(cx,cy,cz)
             i += 1
 
         print(self.block_detections)
-        self.processVideoFrame()
-        cv2.rectangle(self.VideoFrame, (275,120),(1100,720), (255, 0, 0), 2)
-        cv2.rectangle(self.VideoFrame, (575,414),(723,720), (255, 0, 0), 2)
+        cv2.drawContours(self.BlocksDetectedFrame, self.block_contours, -1,
+                         (255, 0, 255), 3)
+        #self.processVideoFrame()
+        #cv2.rectangle(self.VideoFrame, (275,120),(1100,720), (255, 0, 0), 2)
+        #cv2.rectangle(self.VideoFrame, (575,414),(723,720), (255, 0, 0), 2)
 
-        self.BlocksDetectedFrame = self.VideoFrame
-
-        #pass
 
     def detectBlocksInDepthImage(self):
         """!

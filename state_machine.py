@@ -174,20 +174,6 @@ class StateMachine():
                 tag_position_c[id1,1] = self.camera.tag_detections.detections[i].pose.pose.pose.position.y
                 tag_position_c[id1,2] = self.camera.tag_detections.detections[i].pose.pose.pose.position.z
 
-
-        # Cross products for z aligment
-        '''
-        cross_c = np.expand_dims(np.cross(tag_position_c[0,:], tag_position_c[1,:]), axis = 0)
-        print(cross_c.shape)
-        print(tag_position_c.shape)
-        tag_position_c = np.append(tag_position_c,cross_c, axis = 0)
-        print(tag_position_c)
-        cross_w = np.expand_dims(np.cross(self.camera.tag_locations[0,:], self.camera.tag_locations[1,:]), axis = 0)
-        tag_locations = np.append(self.camera.tag_locations,cross_w, axis = 0)
-        print(self.camera.tag_locations)
-        print(tag_locations)
-        '''
-
         tag_position_c = np.transpose(tag_position_c).astype(np.float32)
         tag_position_c_scaled = tag_position_c * 1000
         for i in range(4):
