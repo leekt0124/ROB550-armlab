@@ -23,10 +23,11 @@ if __name__ == '__main__':
     vclamp = np.vectorize(clamp)
 
     dh_params = parse_dh_param_file(args['dhconfig'])
+    print("type of dh_params = ", type(dh_params))
 
     ### Add arm configurations to test here
-    fk_angles = [[0.0,           0.0,            0.0,               0.0]]
-    
+    fk_angles = [[0.0,           0.0,            0.0,               0.0, 0.0]]
+
     print('Test FK')
     fk_poses = []
     for joint_angles in fk_angles:

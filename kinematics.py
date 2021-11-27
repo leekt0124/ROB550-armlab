@@ -9,6 +9,8 @@ import numpy as np
 # expm is a matrix exponential function
 from scipy.linalg import expm
 
+D2R = np.pi / 180.0
+R2D = 180.0 / np.pi
 
 def clamp(angle):
     """!
@@ -44,35 +46,12 @@ def FK_dh(dh_params, joint_angles, link):
 
     @return     a transformation matrix representing the pose of the desired link
     """
-    i = 0
-    homgen_0_1 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
-                        [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
-                        [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
-                        [0, 0, 0, 1]])
-    i = 1
-    homgen_1_2 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
-                        [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
-                        [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
-                        [0, 0, 0, 1]])
-    i = 2
-    homgen_2_3 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
-                        [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
-                        [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
-                        [0, 0, 0, 1]])
-    i = 3
-    homgen_3_4 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
-                        [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
-                        [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
-                        [0, 0, 0, 1]])
-    i = 4
-    homgen_4_5 = np.array([[np.cos(dh_params[i,3]), -np.sin(dh_params[i,3]) * np.cos(dh_params[i,1]), np.sin(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.cos(dh_params[i,3])],
-                        [np.sin(dh_params[i,3]), np.cos(dh_params[i,3]) * np.cos(dh_params[i,1]), -np.cos(dh_params[i,3]) * np.sin(dh_params[i,1]), dh_params[i,0] * np.sin(dh_params[i,3])],
-                        [0, np.sin(dh_params[i,1]), np.cos(dh_params[i,1]), dh_params[i,2]],
-                        [0, 0, 0, 1]])
-
-    H = np.dot(np.dot(np.dot(np.dot(homgen_0_1, homgen_1_2),homgen_2_3),homgen_3_4),homgen_4_5)
-
+    # print("In FK_dh, dh_params = ", dh_params)
+    H = np.identity(4);
+    for i in range(link):
+        H = np.dot(H, get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3] + joint_angles[i]))
     return H
+
 
 def get_transform_from_dh(a, alpha, d, theta):
     """!
@@ -88,7 +67,10 @@ def get_transform_from_dh(a, alpha, d, theta):
     @return     The 4x4 transform matrix.
     """
 
-    pass
+    return np.array([[np.cos(theta), -np.sin(theta) * np.cos(alpha), np.sin(theta) * np.sin(alpha), a * np.cos(theta)],
+                            [np.sin(theta), np.cos(theta) * np.cos(alpha), -np.cos(theta) * np.sin(alpha), a * np.sin(theta)],
+                            [0, np.sin(alpha), np.cos(alpha), d],
+                            [0, 0, 0, 1]])
 
 
 def get_euler_angles_from_T(T):
@@ -101,7 +83,21 @@ def get_euler_angles_from_T(T):
 
     @return     The euler angles from T.
     """
-    pass
+    euler = np.zeros((3, 1))
+    R23 = T[1, 2]
+    R13 = T[0, 2]
+    R33 = T[2, 2]
+    R32 = T[2, 1]
+    R31 = T[2, 0]
+    a = np.arctan2(R23, R13)
+    b = np.arctan2((1 - R33 ** 2) ** 0.5, R33)
+    y = np.arctan2(R32, -R31)
+    #print(euler.shape)
+    euler[0, 0] = a
+    euler[1, 0] = b
+    euler[2, 0] = y
+
+    return euler
 
 
 def get_pose_from_T(T):
@@ -115,7 +111,13 @@ def get_pose_from_T(T):
 
     @return     The pose from T.
     """
-    pass
+    phi = get_euler_angles_from_T(T)[1, 0] * R2D
+    pose = T[:, 3:4]
+    #print("shape of pose = ", pose.shape)
+    pose[3, 0] = phi
+
+
+    return list(pose)
 
 
 def FK_pox(joint_angles, m_mat, s_lst):
@@ -163,6 +165,31 @@ def IK_geometric(dh_params, pose):
                 configuration
     """
 
-    R = np.array([[cos(phi), -sin(phi)][sin(phi), cos(phi)]])
+    # R = np.array([[cos(phi), -sin(phi)][sin(phi), cos(phi)]])
+    l1 = 200
+    l2 = 250
+    l3 = 174.15
 
-    pass
+    dx = pose.x
+    dy = pose.y
+
+    phi = pose.phi
+    phi = D2R * phi
+
+    x = dx - l3 * cos(phi)
+    y = dy - l3 * sin(phi)
+
+    #r = dh_params[1][0]
+    r = x**2 + y**2
+    x2 = (r - l1**2 - l2**2)/(2*l1*l2)
+    y2 = sqrt(1 - x2**2)
+    theta2 = arctan2(y2,x2)
+
+    y1 = ((l1 + l2*x2)*dy - l2*y2*dx)/r
+    x1 = ((l1 + l2*x2)*dx + l2*y2*dy)/r
+    theta1 = arctan2(s1,c1)
+    theta3 = phi - theta1 - theta2
+
+    dh_params[1][3] = theta1
+    dh_params[2][3] = theta2
+    dh_params[3][3] = theta3

@@ -24,6 +24,8 @@ from config_parse import *
 from sensor_msgs.msg import JointState
 import rospy
 import math
+
+from copy import deepcopy
 """
 TODO: Implement the missing functions and add anything you need to support them
 """
@@ -53,7 +55,7 @@ class RXArm(InterbotixRobot):
     """!
     @brief      This class describes a RXArm wrapper class for the rx200
     """
-    def __init__(self, dh_config_file=None):
+    def __init__(self, dh_config_file="./config/rx200_dh.csv"):
         """!
         @brief      Constructs a new instance.
 
@@ -81,7 +83,7 @@ class RXArm(InterbotixRobot):
         self.dh_params = []
         self.dh_config_file = dh_config_file
         if (dh_config_file is not None):
-            self.dh_params = RXArm.parse_dh_param_file(dh_config_file)
+            self.dh_params = RXArm.parse_dh_param_file(self)
         #POX params
         self.M_matrix = []
         self.S_list = []
@@ -190,7 +192,12 @@ class RXArm(InterbotixRobot):
 
         @return     The EE pose as [x, y, z, phi] or as needed.
         """
-        return [0, 0, 0, 0]
+        joint_angles = self.get_positions()
+        #print("joing_angle = ", joint_angles)
+        # print("type of dh_params = ", self.dh_params)
+        return get_pose_from_T(FK_dh(self.dh_params, joint_angles, 5))
+
+        # return [0, 0, 0, 0]
 
     @_ensure_initialized
     def get_wrist_pose(self):
@@ -211,9 +218,9 @@ class RXArm(InterbotixRobot):
 
     def parse_dh_param_file(self):
         print("Parsing DH config file...")
-        parse_dh_param_file(self.dh_config_file)
+        self.dh_params = parse_dh_param_file(self.dh_config_file)
         print("DH config file parse exit.")
-        return dh_params
+        return self.dh_params
 
     def get_dh_parameters(self):
         """!
@@ -239,8 +246,12 @@ class RXArmThread(QThread):
         @param      parent  The parent
         @details    TODO: set any additional initial parameters (like PID gains) here
         """
-        self.pid_gains={rxarm.joint_names[0]:[200,1000,5000],rxarm.joint_names[1]:[500,1000,0],rxarm.joint_names[2]:[500,1000,0],rxarm.joint_names[3]:[500,10,0],rxarm.joint_names[4]:[200,10,5000],rxarm.joint_names[5]:[200,10,5000]}
-        # self.pid_gains={rxarm.joint_names[0]:[2000,0,3600],rxarm.joint_names[1]:[5000,0,0],rxarm.joint_names[2]:[5000,0,0],rxarm.joint_names[3]:[4800,0,0],rxarm.joint_names[4]:[640,0,3600],rxarm.joint_names[5]:[640,0,3600]}
+        self.pid_gains={rxarm.joint_names[0]:[9000,0,3600],rxarm.joint_names[1]:[16000,0,0],rxarm.joint_names[2]:[5000,3000,0],rxarm.joint_names[3]:[800,1000,0],rxarm.joint_names[4]:[640,1000,3600],rxarm.joint_names[5]:[640,10,3600]}
+        # self.pid_gains={rxarm.joint_names[0]:[640,0,3600],rxarm.joint_names[1]:[800,0,0],rxarm.joint_names[2]:[800,0,0],rxarm.joint_names[3]:[800,0,0],rxarm.joint_names[4]:[640,0,3600],rxarm.joint_names[5]:[640,0,3600]}
+
+        for joint_name in self.pid_gains.keys():
+            rxarm.set_joint_position_pid_params(joint_name, self.pid_gains[joint_name])
+
         QThread.__init__(self, parent=parent)
         self.rxarm = rxarm
         rospy.Subscriber('/rx200/joint_states', JointState, self.callback)
@@ -272,8 +283,8 @@ if __name__ == '__main__':
     armThread = RXArmThread(rxarm)
     armThread.start()
 
-    for joint_name in armThread.pid_gains.keys():
-        rxarm.set_joint_position_pid_params(joint_name, armThread.pid_gains[joint_name])
+    # for joint_name in armThread.pid_gains.keys():
+    #     rxarm.set_joint_position_pid_params(joint_name, armThread.pid_gains[joint_name])
 
     try:
         joint_positions = [math.radians(9.05), math.radians(15.47), math.radians(-10.99), math.radians(-40.25), 0.00]

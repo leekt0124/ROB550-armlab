@@ -7,7 +7,7 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 
 import argparse
 import sys
-import cv2
+#import cv2
 import numpy as np
 import rospy
 import time
@@ -108,6 +108,8 @@ class Gui(QMainWindow):
         self.ui.btnUser9.clicked.connect(lambda: self.sm.save_waypoints())
         self.ui.btnUser10.setText('Load Waypoints From File')
         self.ui.btnUser10.clicked.connect(lambda: self.sm.load_waypoints())
+        self.ui.btnUser11.setText('Block Detector')
+        self.ui.btnUser11.clicked.connect(lambda: self.camera.blockDetector())
 
 
 
@@ -152,15 +154,16 @@ class Gui(QMainWindow):
     ### TODO: output the rest of the orientation according to the convention chosen
     @pyqtSlot(list)
     def updateEndEffectorReadout(self, pos):
-        self.ui.rdoutX.setText(str("%+.2f mm" % (1000 * pos[0])))
-        self.ui.rdoutY.setText(str("%+.2f mm" % (1000 * pos[1])))
-        self.ui.rdoutZ.setText(str("%+.2f mm" % (1000 * pos[2])))
-        self.ui.rdoutPhi.setText(str("%+.2f rad" % (pos[3])))
-        #self.ui.rdoutTheta.setText(str("%+.2f" % (pos[4])))
-        #self.ui.rdoutPsi.setText(str("%+.2f" % (pos[5])))
+        #print(self.joint_readouts)
+        self.ui.rdoutX.setText(str("%+.2f mm" % (pos[0])))
+        self.ui.rdoutY.setText(str("%+.2f mm" % (pos[1])))
+        self.ui.rdoutZ.setText(str("%+.2f mm" % (pos[2])))
+        self.ui.rdoutPhi.setText(str("%+.2f deg" % (pos[3])))
+        # self.ui.rdoutTheta.setText(str("%+.2f" % (pos[4])))
+        # self.ui.rdoutPsi.setText(str("%+.2f" % (pos[5])))
 
-    @pyqtSlot(QImage, QImage, QImage)
-    def setImage(self, rgb_image, depth_image, tag_image):
+    @pyqtSlot(QImage, QImage, QImage, QImage)
+    def setImage(self, rgb_image, depth_image, tag_image, blocks_image):
         """!
         @brief      Display the images from the camera.
 
@@ -173,6 +176,8 @@ class Gui(QMainWindow):
             self.ui.videoDisplay.setPixmap(QPixmap.fromImage(depth_image))
         if (self.ui.radioUsr1.isChecked()):
             self.ui.videoDisplay.setPixmap(QPixmap.fromImage(tag_image))
+        if (self.ui.radioUsr2.isChecked()):
+            self.ui.videoDisplay.setPixmap(QPixmap.fromImage(blocks_image))
 
     """ Other callback functions attached to GUI elements"""
 

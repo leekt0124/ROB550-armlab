@@ -7,6 +7,7 @@ import numpy as np
 import rospy
 import cv2
 import csv
+import math
 
 class WaypointRecording():
     def __init__(self):
@@ -170,29 +171,90 @@ class StateMachine():
                 tag_position_c[id1,0] = self.camera.tag_detections.detections[i].pose.pose.pose.position.x
                 tag_position_c[id1,1] = self.camera.tag_detections.detections[i].pose.pose.pose.position.y
                 tag_position_c[id1,2] = self.camera.tag_detections.detections[i].pose.pose.pose.position.z
-                print(tag_position_c[id1,0])
+
+
+        # Cross products for z aligment
+        '''
+        cross_c = np.expand_dims(np.cross(tag_position_c[0,:], tag_position_c[1,:]), axis = 0)
+        print(cross_c.shape)
+        print(tag_position_c.shape)
+        tag_position_c = np.append(tag_position_c,cross_c, axis = 0)
+        print(tag_position_c)
+        cross_w = np.expand_dims(np.cross(self.camera.tag_locations[0,:], self.camera.tag_locations[1,:]), axis = 0)
+        tag_locations = np.append(self.camera.tag_locations,cross_w, axis = 0)
+        print(self.camera.tag_locations)
+        print(tag_locations)
+        '''
+
         tag_position_c = np.transpose(tag_position_c).astype(np.float32)
+        tag_position_c_scaled = tag_position_c * 1000
         for i in range(4):
             tag_position_c[:, i] /=  tag_position_c[2,i]
 
         tag_position_i = np.dot(self.camera.intrinsic_matrix,tag_position_c).astype(np.float32)
 
-        print("U V coordinates")
-        print(tag_position_i)
+        #print("U V coordinates")
+        #print(tag_position_i)
         #tag_position_i = tag_position_i
         self.status_message = "Calibration - Completed Calibration"
 
+
         (success, rot_vec, trans_vec) = cv2.solvePnP(self.camera.tag_locations.astype(np.float32), np.transpose(tag_position_i[:2, :]).astype(np.float32), self.camera.intrinsic_matrix,self.camera.dist_coefficient, flags = cv2.SOLVEPNP_ITERATIVE)
 
-        #print("translational",trans_vec)
-        #print(success)
 
         dst = cv2.Rodrigues(rot_vec)
         dst = np.array(dst[0])
-        # print(dst)
+
         trans_vec = np.squeeze(trans_vec)
         self.camera.extrinsic_matrix[:3, :3] = dst
         self.camera.extrinsic_matrix[:3, 3] = trans_vec
+
+        '''
+        # Tilted plane fix
+        uv_coords = tag_position_i.astype(int)
+        intrinsic_inv = np.linalg.inv(self.camera.intrinsic_matrix)
+        c_coords =  np.matmul(intrinsic_inv, uv_coords)
+
+        for i in range(4):
+            tag_position_c[:, i] /=  tag_position_c[2,i]
+            z = self.camera.DepthFrameRaw[uv_coords[1,i]][uv_coords[0,i]]
+            c_coords[:,i] *= z
+
+        print(c_coords.shape)
+        print([float(1),float(1),float(1),float(1)])
+        c_coords = np.append(c_coords, [[float(1),float(1),float(1),float(1)]], axis=0)
+        w_coords = np.matmul(np.linalg.inv(self.camera.extrinsic_matrix), c_coords)
+        print(w_coords)
+
+        cross_w = np.cross(w_coords[:3,1], w_coords[:3,2])
+        b=np.linalg.norm(cross_w)
+        cross_w = cross_w / b
+
+        w_points = np.append(np.expand_dims(w_coords[:3,1], axis = 1),np.expand_dims(w_coords[:3,2], axis = 1), axis = 1)
+        w_points = np.append(w_points,np.expand_dims(cross_w, axis = 1), axis = 1)
+        print(w_points)
+
+        # True locations
+        true_locations = np.transpose(self.camera.tag_locations)
+        cross_t = np.cross(true_locations[:,1], true_locations[:,2])
+        t=np.linalg.norm(cross_t)
+        cross_t = cross_t / t
+
+        t_points = np.append(np.expand_dims(true_locations[:,1], axis = 1),np.expand_dims(true_locations[:,2], axis = 1), axis = 1)
+        t_points = np.append(t_points,np.expand_dims(cross_t, axis = 1), axis = 1)
+        #print(true_locations)
+        print(t_points)
+
+        dot_product = np.dot(cross_w, cross_t)
+        angle = -np.arccos(dot_product)
+        R = np.array([[1, 0, 0, 0],[0 ,math.cos(angle), - math.sin(angle), 0],[0, math.sin(angle), math.cos(angle), 0], [0, 0, 0, 1]])
+        #T = cv2.getAffineTransform(np.transpose(w_points).astype(np.float32), np.transpose(t_points).astype(np.float32))
+        #T , _ , _= cv2.estimateAffine3D(np.transpose(w_points).astype(np.float32), np.transpose(t_points).astype(np.float32))
+
+        self.camera.extrinsic_matrix = np.matmul(self.camera.extrinsic_matrix, np.linalg.inv(R))
+        print(angle)
+        print(R)
+        '''
 
         print(self.camera.extrinsic_matrix)
 
