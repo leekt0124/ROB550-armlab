@@ -179,7 +179,6 @@ def IK_geometric(dh_params, pose):
     x = dx - l3 * cos(phi)
     y = dy - l3 * sin(phi)
 
-    #r = dh_params[1][0]
     r = x**2 + y**2
     x2 = (r - l1**2 - l2**2)/(2*l1*l2)
     y2 = sqrt(1 - x2**2)
@@ -187,7 +186,7 @@ def IK_geometric(dh_params, pose):
 
     y1 = ((l1 + l2*x2)*dy - l2*y2*dx)/r
     x1 = ((l1 + l2*x2)*dx + l2*y2*dy)/r
-    theta1 = arctan2(s1,c1)
+    theta1 = arctan2(y1,x1)
     theta3 = phi - theta1 - theta2
 
     dh_params[1][3] = theta1
