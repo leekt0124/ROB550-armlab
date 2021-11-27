@@ -248,6 +248,7 @@ class RXArmThread(QThread):
         """
         self.pid_gains={rxarm.joint_names[0]:[9000,0,3600],rxarm.joint_names[1]:[16000,0,0],rxarm.joint_names[2]:[5000,3000,0],rxarm.joint_names[3]:[800,1000,0],rxarm.joint_names[4]:[640,1000,3600],rxarm.joint_names[5]:[640,10,3600]}
         # self.pid_gains={rxarm.joint_names[0]:[640,0,3600],rxarm.joint_names[1]:[800,0,0],rxarm.joint_names[2]:[800,0,0],rxarm.joint_names[3]:[800,0,0],rxarm.joint_names[4]:[640,0,3600],rxarm.joint_names[5]:[640,0,3600]}
+        print(rxarm.joint_names)
 
         for joint_name in self.pid_gains.keys():
             rxarm.set_joint_position_pid_params(joint_name, self.pid_gains[joint_name])

@@ -8,6 +8,8 @@ import rospy
 import cv2
 import csv
 import math
+from pyquaternion import Quaternion
+from scipy.spatial.transform import Rotation as R
 
 class WaypointRecording():
     def __init__(self):
@@ -209,7 +211,7 @@ class StateMachine():
         self.camera.extrinsic_matrix[:3, :3] = dst
         self.camera.extrinsic_matrix[:3, 3] = trans_vec
 
-        '''
+
         # Tilted plane fix
         uv_coords = tag_position_i.astype(int)
         intrinsic_inv = np.linalg.inv(self.camera.intrinsic_matrix)
@@ -226,35 +228,52 @@ class StateMachine():
         w_coords = np.matmul(np.linalg.inv(self.camera.extrinsic_matrix), c_coords)
         print(w_coords)
 
-        cross_w = np.cross(w_coords[:3,1], w_coords[:3,2])
+        # Cross product of tilted frame
+        id1 = 1;
+        id2 = 2;
+        cross_w = np.cross(w_coords[:3,id1], w_coords[:3,id2])
         b=np.linalg.norm(cross_w)
         cross_w = cross_w / b
 
-        w_points = np.append(np.expand_dims(w_coords[:3,1], axis = 1),np.expand_dims(w_coords[:3,2], axis = 1), axis = 1)
+        w_points = np.append(np.expand_dims(w_coords[:3,id1], axis = 1),np.expand_dims(w_coords[:3,id2], axis = 1), axis = 1)
         w_points = np.append(w_points,np.expand_dims(cross_w, axis = 1), axis = 1)
         print(w_points)
 
-        # True locations
+        # Cross product of true locations
         true_locations = np.transpose(self.camera.tag_locations)
-        cross_t = np.cross(true_locations[:,1], true_locations[:,2])
+        cross_t = np.cross(true_locations[:,id1], true_locations[:,id2])
         t=np.linalg.norm(cross_t)
         cross_t = cross_t / t
 
-        t_points = np.append(np.expand_dims(true_locations[:,1], axis = 1),np.expand_dims(true_locations[:,2], axis = 1), axis = 1)
+        t_points = np.append(np.expand_dims(true_locations[:,id1], axis = 1),np.expand_dims(true_locations[:,id2], axis = 1), axis = 1)
         t_points = np.append(t_points,np.expand_dims(cross_t, axis = 1), axis = 1)
-        #print(true_locations)
         print(t_points)
 
+        # Cross product for rotation axis
+        rot_axis = np.cross(cross_w, cross_t)
+        mag_rot=np.linalg.norm(rot_axis)
+        rot_axis = rot_axis / mag_rot
+        print(rot_axis)
+
+        # Angle of rotation
         dot_product = np.dot(cross_w, cross_t)
-        angle = -np.arccos(dot_product)
-        R = np.array([[1, 0, 0, 0],[0 ,math.cos(angle), - math.sin(angle), 0],[0, math.sin(angle), math.cos(angle), 0], [0, 0, 0, 1]])
-        #T = cv2.getAffineTransform(np.transpose(w_points).astype(np.float32), np.transpose(t_points).astype(np.float32))
-        #T , _ , _= cv2.estimateAffine3D(np.transpose(w_points).astype(np.float32), np.transpose(t_points).astype(np.float32))
+        angle = -np.arccos(dot_product)/2
+
+        # Quaternion rotation around the axis
+        q_rotation = Quaternion(axis = rot_axis, angle = angle)
+        print(q_rotation)
+
+        # From Quaternion to rotation
+        #R = q_rotation.transformation_matrix
+        #print(q_rotation.transformation_matrix)
+        R = np.array([[1, 0, 0, 0],[0 ,math.cos(angle), - math.sin(angle), 0],[0, math.sin(angle), math.cos(angle), 10], [0, 0, 0, 1]])
+
 
         self.camera.extrinsic_matrix = np.matmul(self.camera.extrinsic_matrix, np.linalg.inv(R))
+        #
         print(angle)
-        print(R)
-        '''
+        #print(R)
+
 
         print(self.camera.extrinsic_matrix)
 
