@@ -3,6 +3,7 @@ Class to represent the camera.
 """
 
 import cv2
+import math
 import time
 import numpy as np
 from PyQt4.QtGui import QImage
@@ -182,12 +183,19 @@ class Camera():
         BLOCK DETECTION
         '''
 
+        # TODO: Find blocks higher than one stack
+        # - probably need to do contours for each depth threshold
+
+        # TODO: Tune depth and retune these parameters, depth misread is throwing off smaller blocks
+        # TODO: Can't find small blocks in upper left corner
+        # - If I turn up the floor, it creates a big contour in the lower right, making it useless
         lower = 905
-        upper = 954
+        upper = 953
 
         # Image Frame
         self.BlocksDetectedFrame = self.VideoFrame
         rgb_image = cv2.cvtColor(self.VideoFrame, cv2.COLOR_RGB2BGR)
+        hsv_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2HSV)
         cnt_image = cv2.cvtColor(self.VideoFrame, cv2.COLOR_RGB2BGR)
         # Depth data in right format
         depth_data = self.DepthFrameRaw
@@ -202,7 +210,9 @@ class Camera():
         thresh = cv2.bitwise_and(cv2.inRange(depth_data, lower, upper), mask)
         # depending on your version of OpenCV, the following line could be:
         # contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        _, self.block_contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        # Show thresh
+        _, self.block_contours, self.cnt_hierarchies = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cv2.drawContours(self.BlocksDetectedFrame, self.block_contours, -1, (255, 0, 255), 3)
         #print(self.block_contours)
         num_contours = np.shape(self.block_contours)[0]
         print(num_contours)
@@ -220,15 +230,45 @@ class Camera():
             {'id': 'violet', 'color': (100, 40, 80)})
         )
 
-        def retrieve_area_color(data, contour, labels):
+        # TODO: Populate this
+        colors_hsv = list((
+            {'id': 'red', 'color': (0, 170, 90)},
+            {'id': 'red', 'color': (160, 170, 90)},
+            {'id': 'orange', 'color': (11, 180, 180)},
+            {'id': 'yellow', 'color': (25, 220, 204)},
+            {'id': 'green', 'color': (70, 213, 61)},
+            {'id': 'blue', 'color': (104, 203, 94)},
+            {'id': 'violet', 'color': (115, 102, 95)})
+        )
+
+        def retrieve_area_color_rgb(data, contour, labels):
+                mask = np.zeros(data.shape[:2], dtype="uint8")
+                cv2.drawContours(mask, [contour], -1, 255, -1)
+                mean = cv2.mean(data, mask=mask)[:3]
+
+                min_dist = (np.inf, None)
+                for label in labels:
+                    d = np.linalg.norm(label["color"] - np.array(mean))
+                    if d < min_dist[0]:
+                        min_dist = (d, label["id"])
+                return min_dist[1]
+
+        def retrieve_area_color_hsv(data, contour, labels):
             mask = np.zeros(data.shape[:2], dtype="uint8")
             cv2.drawContours(mask, [contour], -1, 255, -1)
             mean = cv2.mean(data, mask=mask)[:3]
+            print(mean)
+#            for elt in mean:
+#                if(elt > 180):
+#                    elt = elt-180
             min_dist = (np.inf, None)
             for label in labels:
-                d = np.linalg.norm(label["color"] - np.array(mean))
+                #d = np.linalg.norm(label["color"] - np.array(mean))
+                #print(label["color"][0])
+                d = math.sqrt(abs(label["color"][0] * label["color"][0] - mean[0]*mean[0]))
                 if d < min_dist[0]:
                     min_dist = (d, label["id"])
+            print("~~")
             return min_dist[1]
 
         def u_v_d_to_world(u,v,d):
@@ -243,30 +283,62 @@ class Camera():
             w_coords = np.matmul(np.linalg.inv(self.extrinsic_matrix), c_coords)
             return w_coords[:3]
 
+        def is_contour_bad(c):
+            # Check size
+            threshold_area = 400
+            area = cv2.contourArea(contour)
+            if(area) < threshold_area:
+                return 1
 
-        self.block_detections = None
-        self.block_detections = np.zeros((num_contours,3))
+            # Check if square
+
+
+        self.block_detections = []
+        #self.block_detections = np.zeros((num_contours,3))
         print(np.shape(self.block_detections))
         i = 0
         for contour in self.block_contours:
-            color = retrieve_area_color(rgb_image, contour, colors)
+            print("RGB COLOR MATCHING")
+            color = retrieve_area_color_rgb(rgb_image, contour, colors)
+            print(color)
+            print("HSV COLOR MATCHING")
+            color = retrieve_area_color_hsv(hsv_image, contour, colors_hsv)
+            print(color)
+            print("~~~~~~~")
             theta = cv2.minAreaRect(contour)[2]
+            # Classify block size
+            # TODO: Tune threshold, apply depth into calculation too (smaller blocks look bigger when stacked high)
+            threshold_area = 250
+            area = cv2.contourArea(contour)
+            print(area)
+            # If block is too small (error in contour reading), skip
+            if is_contour_bad(contour):
+                # Skip over labelling and don't incnlude in block list
+                continue
+
             M = cv2.moments(contour)
             cx = int(M['m10']/M['m00'])
             cy = int(M['m01']/M['m00'])
             cz = self.DepthFrameRaw[cy][cx]
+
+
             cv2.putText(self.BlocksDetectedFrame , color, (cx-30, cy+40), font, 1.0, (0,0,0), thickness=2)
             cv2.putText(self.BlocksDetectedFrame , str(int(theta)), (cx, cy), font, 0.5, (255,255,255), thickness=2)
+            cv2.putText(self.BlocksDetectedFrame , str(int(area)), (cx+50, cy), font, 1.0, (0,255,0), thickness=2)
+
             print(color, int(theta), cx, cy)
-            self.block_detections[i,:] = u_v_d_to_world(cx,cy,cz)
+            self.block_detections.append(u_v_d_to_world(cx,cy,cz))
             i += 1
 
+        print("Block Detections: ")
         print(self.block_detections)
-        cv2.drawContours(self.BlocksDetectedFrame, self.block_contours, -1,
-                         (255, 0, 255), 3)
+
+        cv2.drawContours(self.BlocksDetectedFrame, self.block_contours, -1, (255, 0, 255), 3)
         #self.processVideoFrame()
         #cv2.rectangle(self.VideoFrame, (275,120),(1100,720), (255, 0, 0), 2)
         #cv2.rectangle(self.VideoFrame, (575,414),(723,720), (255, 0, 0), 2)
+
+
 
 
     def detectBlocksInDepthImage(self):
