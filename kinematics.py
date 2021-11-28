@@ -170,12 +170,8 @@ def IK_geometric(dh_params, pose):
     l2 = 250
     l3 = 174.15
 
-    # # dx = pose.x
-    # # dy = pose.y
     # dx = pose[0]
     # dy = pose[1]
-
-    # # phi = pose.phi
     # phi = pose[3]
     # phi = D2R * phi
 
