@@ -48,7 +48,7 @@ def FK_dh(dh_params, joint_angles, link):
     """
     # print("In FK_dh, dh_params = ", dh_params)
     H = np.identity(4);
-    for i in range(link):
+    for i in range(link + 1):
         H = np.dot(H, get_transform_from_dh(dh_params[i, 0], dh_params[i, 1], dh_params[i, 2], dh_params[i, 3] + joint_angles[i]))
     return H
 
@@ -170,28 +170,52 @@ def IK_geometric(dh_params, pose):
     l2 = 250
     l3 = 174.15
 
-    # dx = pose.x
-    # dy = pose.y
-    dx = pose[0]
-    dy = pose[1]
+    # dx = pose[0]
+    # dy = pose[1]
+    # phi = pose[3]
+    # phi = D2R * phi
 
-    # phi = pose.phi
-    phi = pose[3]
-    phi = D2R * phi
+    # x = dx - l3 * np.cos(phi)
+    # y = dy - l3 * np.sin(phi)
 
-    x = dx - l3 * np.cos(phi)
-    y = dy - l3 * np.sin(phi)
+    # r = x**2 + y**2
+    # x2 = (r - l1**2 - l2**2)/(2*l1*l2)
+    # y2 = np.sqrt(1 - x2**2)
+    # theta2 = np.arctan2(y2,x2)
 
-    r = x**2 + y**2
-    x2 = (r - l1**2 - l2**2)/(2*l1*l2)
-    y2 = np.sqrt(1 - x2**2)
-    theta2 = np.arctan2(y2,x2)
+    # y1 = ((l1 + l2*x2)*dy - l2*y2*dx)/r
+    # x1 = ((l1 + l2*x2)*dx + l2*y2*dy)/r
+    # theta1 = np.arctan2(y1,x1)
+    # theta3 = phi - theta1 - theta2
 
-    y1 = ((l1 + l2*x2)*dy - l2*y2*dx)/r
-    x1 = ((l1 + l2*x2)*dx + l2*y2*dy)/r
-    theta1 = np.arctan2(y1,x1)
-    theta3 = phi - theta1 - theta2
+    # # dh_params[1][3] = theta1
+    # # dh_params[2][3] = theta2
+    # # dh_params[3][3] = theta3
 
-    # dh_params[1][3] = theta1
-    # dh_params[2][3] = theta2
-    # dh_params[3][3] = theta3
+    l6 = 174.15
+    l2 = 200
+    l3 = 65
+
+    xo = pose[0]
+    yo = pose[1]
+    zo = pose[2]
+    phi = pose[3] - 90
+
+    # Calculate R
+    theta1 = np.arctan2(yo, xo) - np.pi / 2
+    # rot_z = np.array([[np.cos(theta1), -np.sin(theta1), 0], [np.sin(theta1), np.cos(theta1), 0], [0, 0, 1]])
+    # rot_x = np.array([[1, 0, 0], [0, np.cos(phi), -np.sin(phi)], [0, np.sin(phi), np.cos(phi)]])
+    R = np.array([[-np.sin(phi) * np.sin(theta1), np.cos(theta1), -np.cos(phi) * np.sin(theta1)], [np.sin(phi) * np.cos(theta1), np.sin(theta1), np.cos(phi) * np.cos(theta1)], [np.cos(phi), 0, -np.sin(phi)]])
+    r13 = R[0, 2]
+    r23 = R[1, 2]
+    r33 = R[2, 2]
+    xc = xo - l6 * r13
+    yc = yo - l6 * r23
+    zc = zo - l6 * r33
+    print(xo, yo, zo)
+    print(xc, yc, zc)
+    r = np.sqrt(xc ** 2 + yc ** 2)
+    s = zc - d
+
+    theta3 = np.arccos(r ** 2 + s ** 2 - l2 ** 2 - l3 ** 2 / (2 * l2 * l3))
+    theta2 = np.arctan2(s, r) - np.arctan2(l3 * sin(theta3), l2 + l3 * np.cos(theta3))

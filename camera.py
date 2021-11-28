@@ -194,6 +194,7 @@ class Camera():
 
         # Image Frame
         self.BlocksDetectedFrame = self.VideoFrame
+        # TODO: Add blur to create better contour detection? Try to use blur to smooth inside of block but leave outside alone
         rgb_image = cv2.cvtColor(self.VideoFrame, cv2.COLOR_RGB2BGR)
         hsv_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2HSV)
         cnt_image = cv2.cvtColor(self.VideoFrame, cv2.COLOR_RGB2BGR)
@@ -221,6 +222,12 @@ class Camera():
         BLOCK LABELING
         '''
         font = cv2.FONT_HERSHEY_SIMPLEX
+        # TODO: Find which color is which under a better range
+        # - Sample colors around the board
+        # - Generate heat map of colors
+        # - Find individual thresholds for colors
+
+        # RGB Color List
         colors = list((
             {'id': 'red', 'color': (10, 10, 127)},
             {'id': 'orange', 'color': (30, 75, 150)},
