@@ -166,9 +166,9 @@ def IK_geometric(dh_params, pose):
     """
 
     # R = np.array([[cos(phi), -sin(phi)][sin(phi), cos(phi)]])
-    l1 = 200
-    l2 = 250
-    l3 = 174.15
+    # l1 = 200
+    # l2 = 250
+    # l3 = 174.15
 
     # # dx = pose.x
     # # dy = pose.y
