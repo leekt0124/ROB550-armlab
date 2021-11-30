@@ -170,12 +170,8 @@ def IK_geometric(dh_params, pose):
     # l2 = 250
     # l3 = 174.15
 
-    # # dx = pose.x
-    # # dy = pose.y
     # dx = pose[0]
     # dy = pose[1]
-
-    # # phi = pose.phi
     # phi = pose[3]
     # phi = D2R * phi
 
@@ -196,9 +192,6 @@ def IK_geometric(dh_params, pose):
     # # dh_params[2][3] = theta2
     # # dh_params[3][3] = theta3
 
-
-
-    # Nelson
     l6 = 174.15
     l2 = 200
     l3 = 65
@@ -226,5 +219,3 @@ def IK_geometric(dh_params, pose):
 
     theta3 = np.arccos(r ** 2 + s ** 2 - l2 ** 2 - l3 ** 2 / (2 * l2 * l3))
     theta2 = np.arctan2(s, r) - np.arctan2(l3 * sin(theta3), l2 + l3 * np.cos(theta3))
-
-
