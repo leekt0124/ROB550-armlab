@@ -198,7 +198,7 @@ def IK_geometric(dh_params, pose):
     d = 103.91
     l2_offset = np.arctan(1.0 / 4.0)
     # print('l2_offset = ', l2_offset)
-    print(l2_offset)
+    # print(l2_offset)
 
     xo = pose[0]
     yo = pose[1]
@@ -210,30 +210,30 @@ def IK_geometric(dh_params, pose):
     # rot_z = np.array([[np.cos(theta1), -np.sin(theta1), 0], [np.sin(theta1), np.cos(theta1), 0], [0, 0, 1]])
     # rot_x = np.array([[1, 0, 0], [0, np.cos(phi), -np.sin(phi)], [0, np.sin(phi), np.cos(phi)]])
     R = np.array([[-np.sin(phi) * np.sin(theta1), np.cos(theta1), -np.cos(phi) * np.sin(theta1)], [np.sin(phi) * np.cos(theta1), np.sin(theta1), np.cos(phi) * np.cos(theta1)], [np.cos(phi), 0, -np.sin(phi)]], dtype=float)
-    print("R = ", R)
+    # print("R = ", R)
     r13 = R[0, 2]
     r23 = R[1, 2]
     r33 = R[2, 2]
     xc = xo - l6 * r13
     yc = yo - l6 * r23
     zc = zo - l6 * r33
-    print("xo, yo, zo = ", xo, yo, zo)
-    print("xc, yc, zc = ", xc, yc, zc)
+    # print("xo, yo, zo = ", xo, yo, zo)
+    # print("xc, yc, zc = ", xc, yc, zc)
     r = np.sqrt(xc ** 2 + yc ** 2)
     s = zc - d
 
-    print("r, s = ", r, " ", s)
-    print(r ** 2)
-    print(s ** 2)
-    print(l2 ** 2)
-    print(l3 ** 2)
-    print((r ** 2 + s ** 2 - l2 ** 2 - l3 ** 2) / (2 * l2 * l3))
+    # print("r, s = ", r, " ", s)
+    # print(r ** 2)
+    # print(s ** 2)
+    # print(l2 ** 2)
+    # print(l3 ** 2)
+    # print((r ** 2 + s ** 2 - l2 ** 2 - l3 ** 2) / (2 * l2 * l3))
 
     theta3 = - np.arccos((r ** 2 + s ** 2 - l2 ** 2 - l3 ** 2) / (2 * l2 * l3))
     theta2 = np.arctan2(s, r) - np.arctan2(l3 * np.sin(theta3), l2 + l3 * np.cos(theta3))
 
     theta4 = - phi - (theta2 + theta3)
-    print("theta1 = ", theta1 * R2D, " theta2 = ", theta2 * R2D, " theta3 = ", theta3 * R2D, " theta4 = ", theta4 * R2D)
+    # print("theta1 = ", theta1 * R2D, " theta2 = ", theta2 * R2D, " theta3 = ", theta3 * R2D, " theta4 = ", theta4 * R2D)
     # Transform from theta to joint angle
     angle1 = theta1[0]
     angle2 = np.pi / 2.0 - theta2[0] - l2_offset
@@ -241,9 +241,9 @@ def IK_geometric(dh_params, pose):
     angle4 = theta4[0]
     # print(np.pi / 2)
 
-    print(angle1, angle2, angle3, angle4)
+    # print(angle1, angle2, angle3, angle4)
 
-    IK_output = np.array([[angle1, angle2, angle3, angle4]])
+    IK_output = np.array([[angle1 * R2D, angle2 * R2D, angle3 * R2D, angle4 * R2D]])
     # IK_output = np.array([[0, 0, 0, 0]])
 
 

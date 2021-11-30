@@ -5,6 +5,7 @@ Class to represent the camera.
 import cv2
 import math
 import time
+import timeit
 import numpy as np
 from PyQt4.QtGui import QImage
 from PyQt4.QtCore import QThread, pyqtSignal, QTimer
@@ -16,6 +17,16 @@ from sensor_msgs.msg import CameraInfo
 from apriltag_ros.msg import *
 from cv_bridge import CvBridge, CvBridgeError
 
+
+# Define block class for easy storage
+class Block():
+    def __init__(self, coords, theta, color, size, layer):
+        # x,y,z
+        self.coord = coords
+        self.theta = theta
+        self.layer = layer
+        self.color = color
+        self.size = size
 
 class Camera():
     """!
@@ -37,7 +48,8 @@ class Camera():
         self.cameraCalibrated = False
         #self.intrinsic_matrix = np.array([[904.3, 0, 696.0], [0, 906.1, 361.9], [0, 0, 1]]) # Average intrinsic_matrix
         self.intrinsic_matrix = np.array([[908.3550415039062, 0, 642.5927124023438], [0, 908.4041137695312, 353.12652587890625], [0, 0, 1]]) # Factory intrinsic_matrix
-        self.extrinsic_matrix = np.linalg.inv(np.array([[1, 0, 0, -20], [0, -1, 0, 180], [0, 0, -1, 973], [0, 0, 0, 1]]).astype(np.float32))
+        self.extrinsic_matrix = np.array([[1, 0, 0, 20], [0, -1, 0, 235], [0, 0, -1, 973], [0, 0, 0, 1]]).astype(np.float32) # np.linalg.inv(
+        print(self.extrinsic_matrix)
         self.last_click = np.array([0, 0])
         self.new_click = False
         self.rgb_click_points = np.zeros((5, 2), int)
@@ -51,7 +63,7 @@ class Camera():
         self.tag_locations = np.array([[-250, -25, 0], [250, -25, 0], [250, 275, 0], [-250, 275, 0]])
         """ block info """
         self.block_contours = np.array([])
-        self.block_detections = {'big-blocks':[],'small-blocks':[]}
+        self.block_detections = []
 
     def processVideoFrame(self):
         """!
@@ -84,6 +96,53 @@ class Camera():
         """
         self.DepthFrameRaw = cv2.imread("data/raw_depth.png",
                                         0).astype(np.uint16)
+
+    # Called in calibration to process depth data for block detection
+    def processDepthFrame(self):
+        # Set depth data for calibration
+        #depth_data = self.DepthFrameRaw
+        depth_data = cv2.imread('depth_calibration_board.png', cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
+
+        self.depth_correction = depth_data
+
+        left_u = 275
+        right_u = 1100
+        top = 135
+        top_v = 135
+        bottom_v = 715
+
+        for i in range(left_u-1,right_u+1):
+            for j in range(top_v-1, bottom_v+1):
+                self.depth_correction[j][i] = depth_data[j][i] - 973
+#        # Frame aligment
+#        prop_v = (depth_data[top_v][left_u] - depth_data[bottom_v][left_u])
+#        #prop_u = (depth_data[bottom_v][left_u] - depth_data[bottom_v][right_u])
+#        prop_u = (depth_data[top_v][left_u] - depth_data[top_v][right_u])
+#        #prop_u = (float(prop_u1) + float(prop_u2))/2.0
+#        range_v = abs(top_v - bottom_v)
+#        range_u = abs(left_u - right_u)
+
+#        opt = float(prop_u)/float(range_u)
+
+#        for i in range(left_u-1,right_u+1):
+#            for j in range(top_v-1, bottom_v+1):
+#                depth_data[j][i] = depth_data[j][i] + int(float(j-top_v)*opt)
+
+#        prop_v = (depth_data[top_v][left_u] - depth_data[bottom_v][left_u])
+#        #prop_u = (depth_data[bottom_v][left_u] - depth_data[bottom_v][right_u])
+#        prop_u = (depth_data[top_v][left_u] - depth_data[top_v][right_u])
+#        #prop_u = (float(prop_u1) + float(prop_u2))/2.0
+#        range_v = abs(top_v - bottom_v)
+#        range_u = abs(left_u - right_u)
+
+
+#        for i in range(left_u-1,right_u+1):
+#            for j in range(top_v-1, bottom_v+1):
+#                depth_data[j][i] = depth_data[j][i] + int(float(i-left_u)*opt)
+
+#        self.depth_mean = (depth_data[top_v][left_u] + depth_data[bottom_v][left_u] + depth_data[top_v][right_u] + depth_data[bottom_v][right_u])/4# 950#905
+
+
 
     def convertQtVideoFrame(self):
         """!
@@ -186,6 +245,11 @@ class Camera():
         # TODO: Find blocks higher than one stack
         # - probably need to do contours for each depth threshold
 
+        # Delete blocks
+        # TODO: Remove reset for persistence after testing Done
+        # TODO: Check if block already in list before adding it
+        self.block_detections = []
+
         # TODO: Tune depth and retune these parameters, depth misread is throwing off smaller blocks
         # TODO: Can't find small blocks in upper left corner
         # - If I turn up the floor, it creates a big contour in the lower right, making it useless
@@ -197,7 +261,7 @@ class Camera():
         rgb_image = cv2.cvtColor(self.VideoFrame, cv2.COLOR_RGB2BGR)
         hsv_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2HSV)
         cnt_image = cv2.cvtColor(self.VideoFrame, cv2.COLOR_RGB2BGR)
-        # Depth data in right format
+
         depth_data = self.DepthFrameRaw
 
         # Mask limits
@@ -207,71 +271,29 @@ class Camera():
         top_v = 135
         bottom_v = 715
 
-        # Frame aligment
-        prop_v = (depth_data[top_v][left_u] - depth_data[bottom_v][left_u])
-        #prop_u = (depth_data[bottom_v][left_u] - depth_data[bottom_v][right_u])
-        prop_u = (depth_data[top_v][left_u] - depth_data[top_v][right_u])
-        #prop_u = (float(prop_u1) + float(prop_u2))/2.0
-        range_v = abs(top_v - bottom_v)
-        range_u = abs(left_u - right_u)
-
-
-        print('BEFORE')
-        print(depth_data[top_v][left_u])
-        print(depth_data[bottom_v][left_u])
-        print(depth_data[top_v][right_u])
-        print(depth_data[bottom_v][right_u])
-
-        print('Proportion')
-        print(prop_v)
-        print(range_v)
-        print(float(prop_v)/float(range_v))
-
-        c = 1
-
-
-        opt = float(prop_u)/float(range_u)
 
         for i in range(left_u-1,right_u+1):
             for j in range(top_v-1, bottom_v+1):
-                depth_data[j][i] = depth_data[j][i] + int(float(j-top_v)*opt)
+                depth_data[j][i] = depth_data[j][i] - self.depth_correction[j][i]
 
-        prop_v = (depth_data[top_v][left_u] - depth_data[bottom_v][left_u])
-        #prop_u = (depth_data[bottom_v][left_u] - depth_data[bottom_v][right_u])
-        prop_u = (depth_data[top_v][left_u] - depth_data[top_v][right_u])
-        #prop_u = (float(prop_u1) + float(prop_u2))/2.0
-        range_v = abs(top_v - bottom_v)
-        range_u = abs(left_u - right_u)
-
-
-        for i in range(left_u-1,right_u+1):
-            for j in range(top_v-1, bottom_v+1):
-                depth_data[j][i] = depth_data[j][i] + int(float(i-left_u)*opt)
-
-            #print(depth_data[(left_u-1):(right_u)][i])
-
-        print('AFTER')
-        print(depth_data[top_v][left_u])
-        print(depth_data[bottom_v][left_u])
-        print(depth_data[top_v][right_u])
-        print(depth_data[bottom_v][right_u])
+        # Layer 1 threshold
+        # min - 25
+        # max - 38
+        # error terms +- 3
+        l1_min = 21
+        l1_max = 40
+        l1_error = 3
 
         depth_mean = (depth_data[top_v][left_u] + depth_data[bottom_v][left_u] + depth_data[top_v][right_u] + depth_data[bottom_v][right_u])/4# 950#905
 
-        small_block_mean = 25
-        small_block_error = 7
-        big_block_mean = 38
-        big_block_error = 3
-        lower_small = depth_mean - small_block_mean + small_block_error
-        upper_small = depth_mean - small_block_mean - small_block_error
+
+        l1_lower = depth_mean - l1_min + l1_error
+        l1_upper = depth_mean - l1_max - l1_error
 
         print("generated thresholds:")
-        print(lower_small)
-        print(upper_small)
+        print(l1_lower)
+        print(l1_upper)
         print("~~~~~~")
-
-        lower_big = depth_mean - big_block_mean + big_block_error
-        upper_big = depth_mean - big_block_mean - big_block_error
 
         #cv2.namedWindow("Threshold window", cv2.WINDOW_NORMAL)
         """mask out arm & outside board"""
@@ -280,24 +302,19 @@ class Camera():
         cv2.rectangle(mask, (575,414),(736,720), 0, cv2.FILLED)
         cv2.rectangle(self.BlocksDetectedFrame , (left_u,top),(right_u,bottom_v), (255, 0, 0), 2)
         cv2.rectangle(self.BlocksDetectedFrame , (575,414),(736,720), (255, 0, 0), 2)
-        #depth_data = self.DepthFrameRaw
-        thresh_small = cv2.bitwise_and(cv2.inRange(depth_data, upper_small, lower_small), mask)
-        # TODO: test thresh big
-        # thresh_big = cv2.bitwise_and(cv2.inRange(depth_data, lower_big, upper_big), mask)
+        # Calculate thresh for level 1
+        l1_thresh = cv2.bitwise_and(cv2.inRange(depth_data, l1_upper, l1_lower), mask)
 
         # depending on your version of OpenCV, the following line could be:
         # contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         # Show thresh
-        _, self.block_contours, _ = cv2.findContours(thresh_small, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        _, self.block_contours, _ = cv2.findContours(l1_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         cv2.drawContours(self.BlocksDetectedFrame, self.block_contours, -1, (255, 0, 255), 3)
         #print(self.block_contours)
         num_contours = np.shape(self.block_contours)[0]
         print(num_contours)
 
         # Reset block detections
-        # TODO: Remove after testing Done
-        self.block_detections = {'big-blocks':[],'small-blocks':[]}
-
         '''
         BLOCK LABELING
         '''
@@ -346,27 +363,8 @@ class Camera():
             mask = np.zeros(data.shape[:2], dtype="uint8")
             cv2.drawContours(mask, [contour], -1, 255, -1)
             mean = cv2.mean(data, mask=mask)[:3]
-            """
-            sum_sin = 0
-            sum_cos = 0
-            print(data[0])
-            for hue in data[0]:
-                print("HUE: !!!!!!")
-                print(hue)
-                sum_sin += math.sin(math.radians(hue[0]))
-                sum_cos += math.cos(math.radians(hue[0]))
-            mean = math.degrees(math.atan2(sum_sin, sum_cos))
-            print("Mean: !!!!!!!!!")
-            print(mean)
-            print("~~~~~~~~~~~~~~~~~~~~~~~")
-#            for elt in mean:
-#                if(elt > 180):
-#                    elt = elt-180
-"""
             min_dist = (np.inf, None)
             for label in labels:
-                #d = np.linalg.norm(label["color"] - np.array(mean))
-                #print(label["color"][0])
                 d = math.sqrt(abs(label["color"][0] * label["color"][0] - mean[0]*mean[0]))
                 if d < min_dist[0]:
                     min_dist = (d, label["id"])
@@ -400,11 +398,6 @@ class Camera():
         for contour in self.block_contours:
             #print("RGB COLOR MATCHING")
             color = retrieve_area_color_rgb(rgb_image, contour, colors)
-            #print(color)
-            #print("HSV COLOR MATCHING")
-#            color = retrieve_area_color_hsv(hsv_image, contour, colors_hsv)
-            #print(color)
-            #print("~~~~~~~")
             theta = cv2.minAreaRect(contour)[2]
             # Classify block size
             # TODO: Tune threshold, apply depth into calculation too (smaller blocks look bigger when stacked high)
@@ -419,7 +412,8 @@ class Camera():
             M = cv2.moments(contour)
             cx = int(M['m10']/M['m00'])
             cy = int(M['m01']/M['m00'])
-            cz = self.DepthFrameRaw[cy][cx]
+            # TODO: Might need to modify cz, using modified depth data now
+            cz = depth_data[cy][cx]
 
 
             cv2.putText(self.BlocksDetectedFrame , color, (cx-30, cy+40), font, 1.0, (0,0,0), thickness=2)
@@ -427,10 +421,11 @@ class Camera():
             cv2.putText(self.BlocksDetectedFrame , str(int(area)), (cx+50, cy), font, 1.0, (0,255,0), thickness=2)
 
             #print(color, int(theta), cx, cy)
+            layer = 1
             if(area > 1000):
-                self.block_detections["big-blocks"].append((color,theta,u_v_d_to_world(cx,cy,cz)))
+                self.block_detections.append(Block(u_v_d_to_world(cx,cy,cz), theta, color, "big", layer))
             else:
-                self.block_detections["small-blocks"].append((color,theta,u_v_d_to_world(cx,cy,cz)))
+                self.block_detections.append(Block(u_v_d_to_world(cx,cy,cz), theta, color, "small", layer))
             i += 1
 
         print("Block Detections: ")

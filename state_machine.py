@@ -3,6 +3,7 @@ The state machine that implements the logic.
 """
 from PyQt4.QtCore import (QThread, Qt, pyqtSignal, pyqtSlot, QTimer)
 import time
+import timeit
 import numpy as np
 import rospy
 import cv2
@@ -184,6 +185,7 @@ class StateMachine():
         #print("U V coordinates")
         #print(tag_position_i)
         #tag_position_i = tag_position_i
+        self.camera.processDepthFrame()
         self.status_message = "Calibration - Completed Calibration"
 
 

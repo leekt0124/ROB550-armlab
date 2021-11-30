@@ -185,6 +185,10 @@ class RXArm(InterbotixRobot):
 
 
 #   @_ensure_initialized
+    def get_IK(self):
+        ee_pose = self.get_ee_pose()
+        print(IK_geometric(self.dh_params, ee_pose))
+
 
     def get_ee_pose(self):
         """!
@@ -195,7 +199,7 @@ class RXArm(InterbotixRobot):
         joint_angles = self.get_positions()
         #print("joing_angle = ", joint_angles)
         # print("type of dh_params = ", self.dh_params)
-        return get_pose_from_T(FK_dh(self.dh_params, joint_angles, 5))
+        return get_pose_from_T(FK_dh(self.dh_params, joint_angles, 4))
 
         # return [0, 0, 0, 0]
 
@@ -264,11 +268,13 @@ class RXArmThread(QThread):
         self.rxarm.effort_fb = np.asarray(data.effort)[0:5]
         self.updateJointReadout.emit(self.rxarm.position_fb.tolist())
         # TODO: uncomment, preventing HSV tuning because broken
-        # self.updateEndEffectorReadout.emit(self.rxarm.get_ee_pose())
+        #self.rxarm.get_IK()
+        #self.updateEndEffectorReadout.emit(self.rxarm.get_ee_pose())
         #for name in self.rxarm.joint_names:
         #    print("{0} gains: {1}".format(name, self.rxarm.get_motor_pid_params(name)))
-        if (__name__ == '__main__'):
-            print(self.rxarm.position_fb)
+        # TODO: Commented this out for camera testing purposes
+        #if (__name__ == '__main__'):
+            #print(self.rxarm.position_fb)
 
     def run(self):
         """!
