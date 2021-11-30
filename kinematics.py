@@ -240,6 +240,8 @@ def IK_geometric(dh_params, pose):
     angle3 = np.pi / 2 + theta3 - l2_offset
     angle4 = theta4
 
+    print(angele1, angle2, angle3, angle4)
+
     IK_output = np.array([[angle1, angle2, angle3, angle4]])
     # IK_output = np.array([[0, 0, 0, 0]])
 
