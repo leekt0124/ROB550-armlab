@@ -193,19 +193,23 @@ def IK_geometric(dh_params, pose):
     # # dh_params[3][3] = theta3
 
     l6 = 174.15
-    l2 = 200
-    l3 = 65
+    l2 = 205.73
+    l3 = 200
+    d = 103.91
+    l2_offset = np.arctan(1 / 4)
+    print(l2_offset)
 
     xo = pose[0]
     yo = pose[1]
     zo = pose[2]
-    phi = pose[3] - 90
+    phi = (pose[3] - 90) * D2R
 
     # Calculate R
-    theta1 = np.arctan2(yo, xo) - np.pi / 2
+    theta1 = np.pi / 2 - np.arctan2(yo, xo)
     # rot_z = np.array([[np.cos(theta1), -np.sin(theta1), 0], [np.sin(theta1), np.cos(theta1), 0], [0, 0, 1]])
     # rot_x = np.array([[1, 0, 0], [0, np.cos(phi), -np.sin(phi)], [0, np.sin(phi), np.cos(phi)]])
-    R = np.array([[-np.sin(phi) * np.sin(theta1), np.cos(theta1), -np.cos(phi) * np.sin(theta1)], [np.sin(phi) * np.cos(theta1), np.sin(theta1), np.cos(phi) * np.cos(theta1)], [np.cos(phi), 0, -np.sin(phi)]])
+    R = np.array([[-np.sin(phi) * np.sin(theta1), np.cos(theta1), -np.cos(phi) * np.sin(theta1)], [np.sin(phi) * np.cos(theta1), np.sin(theta1), np.cos(phi) * np.cos(theta1)], [np.cos(phi), 0, -np.sin(phi)]], dtype=float)
+    print("R = ", R)
     r13 = R[0, 2]
     r23 = R[1, 2]
     r33 = R[2, 2]
@@ -217,5 +221,17 @@ def IK_geometric(dh_params, pose):
     r = np.sqrt(xc ** 2 + yc ** 2)
     s = zc - d
 
-    theta3 = np.arccos(r ** 2 + s ** 2 - l2 ** 2 - l3 ** 2 / (2 * l2 * l3))
-    theta2 = np.arctan2(s, r) - np.arctan2(l3 * sin(theta3), l2 + l3 * np.cos(theta3))
+    theta3 = np.arccos((r ** 2 + s ** 2 - l2 ** 2 - l3 ** 2) / (2 * l2 * l3))
+    theta2 = np.arctan2(s, r) - np.arctan2(l3 * np.sin(theta3), l2 + l3 * np.cos(theta3))
+
+    theta4 = - phi - (theta2 + theta3)
+
+    # Transform from theta to joint angle
+    angle1 = theta1
+    angle2 = np.pi / 2 - theta2 - l2_offset 
+    angle3 = np.pi / 2 + theta3 - l2_offset
+    angle4 = theta4
+
+
+
+    return 
