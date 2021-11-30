@@ -196,7 +196,8 @@ def IK_geometric(dh_params, pose):
     l2 = 205.73
     l3 = 200
     d = 103.91
-    l2_offset = np.arctan(1 / 4)
+    l2_offset = np.arctan(1.0 / 4.0)
+    # print('l2_offset = ', l2_offset)
     print(l2_offset)
 
     xo = pose[0]
@@ -233,12 +234,12 @@ def IK_geometric(dh_params, pose):
 
     theta4 = - phi - (theta2 + theta3)
     print("theta1 = ", theta1 * R2D, " theta2 = ", theta2 * R2D, " theta3 = ", theta3 * R2D, " theta4 = ", theta4 * R2D)
-
     # Transform from theta to joint angle
-    angle1 = theta1
-    angle2 = np.pi / 2 - theta2 - l2_offset 
-    angle3 = np.pi / 2 + theta3 - l2_offset
-    angle4 = theta4
+    angle1 = theta1[0]
+    angle2 = np.pi / 2.0 - theta2[0] - l2_offset
+    angle3 = np.pi / 2.0 + theta3[0] - l2_offset
+    angle4 = theta4[0]
+    # print(np.pi / 2)
 
     print(angle1, angle2, angle3, angle4)
 
