@@ -26,7 +26,7 @@ if __name__ == '__main__':
     print("type of dh_params = ", type(dh_params))
 
     ### Add arm configurations to test here
-    fk_angles = [[0.0, 0.0, 0.0, 0.0, 0.0]]
+    fk_angles = [[0.6, 0.5, 0.6, 0.5, 0.5]]
 
     print('Test FK')
     fk_poses = []
