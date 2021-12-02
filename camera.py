@@ -49,7 +49,6 @@ class Camera():
         #self.intrinsic_matrix = np.array([[904.3, 0, 696.0], [0, 906.1, 361.9], [0, 0, 1]]) # Average intrinsic_matrix
         self.intrinsic_matrix = np.array([[908.3550415039062, 0, 642.5927124023438], [0, 908.4041137695312, 353.12652587890625], [0, 0, 1]]) # Factory intrinsic_matrix
         self.extrinsic_matrix = np.array([[1, 0, 0, 20], [0, -1, 0, 235], [0, 0, -1, 973], [0, 0, 0, 1]]).astype(np.float32) # np.linalg.inv(
-        print(self.extrinsic_matrix)
         self.last_click = np.array([0, 0])
         self.new_click = False
         self.rgb_click_points = np.zeros((5, 2), int)
@@ -100,19 +99,21 @@ class Camera():
     # Called in calibration to process depth data for block detection
     def processDepthFrame(self):
         # Set depth data for calibration
-        #depth_data = self.DepthFrameRaw
-        depth_data = cv2.imread('depth_calibration_board.png', cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
+        depth_data = self.DepthFrameRaw
+        #depth_data = cv2.imread('depth_calibration_board.png', cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
 
         self.depth_correction = depth_data
 
+        '''
         left_u = 275
         right_u = 1100
         top = 135
         top_v = 135
         bottom_v = 715
+        '''
 
-        for i in range(left_u-1,right_u+1):
-            for j in range(top_v-1, bottom_v+1):
+        for i in range(0,1280):
+            for j in range(0,720):
                 self.depth_correction[j][i] = depth_data[j][i] - 973
 #        # Frame aligment
 #        prop_v = (depth_data[top_v][left_u] - depth_data[bottom_v][left_u])
@@ -265,27 +266,32 @@ class Camera():
         depth_data = self.DepthFrameRaw
 
         # Mask limits
-        left_u = 275
+        left_u = 235
         right_u = 1100
         top = 135
         top_v = 135
         bottom_v = 715
 
-
-        for i in range(left_u-1,right_u+1):
-            for j in range(top_v-1, bottom_v+1):
+        for i in range(0,1280):
+            for j in range(0, 720):
                 depth_data[j][i] = depth_data[j][i] - self.depth_correction[j][i]
+
 
         # Layer 1 threshold
         # min - 25
         # max - 38
         # error terms +- 3
-        l1_min = 21
+        l1_min = 18
         l1_max = 40
         l1_error = 3
 
         depth_mean = (depth_data[top_v][left_u] + depth_data[bottom_v][left_u] + depth_data[top_v][right_u] + depth_data[bottom_v][right_u])/4# 950#905
 
+
+        print(depth_data[top_v][left_u])
+        print(depth_data[bottom_v][left_u])
+        print(depth_data[top_v][right_u])
+        print(depth_data[bottom_v][right_u])
 
         l1_lower = depth_mean - l1_min + l1_error
         l1_upper = depth_mean - l1_max - l1_error
@@ -299,9 +305,9 @@ class Camera():
         """mask out arm & outside board"""
         mask = np.zeros_like(depth_data, dtype=np.uint8)
         cv2.rectangle(mask, (left_u,top),(right_u,bottom_v), 255, cv2.FILLED)
-        cv2.rectangle(mask, (575,414),(736,720), 0, cv2.FILLED)
+        cv2.rectangle(mask, (575,390),(736,720), 0, cv2.FILLED)
         cv2.rectangle(self.BlocksDetectedFrame , (left_u,top),(right_u,bottom_v), (255, 0, 0), 2)
-        cv2.rectangle(self.BlocksDetectedFrame , (575,414),(736,720), (255, 0, 0), 2)
+        cv2.rectangle(self.BlocksDetectedFrame , (575,390),(736,720), (255, 0, 0), 2)
         # Calculate thresh for level 1
         l1_thresh = cv2.bitwise_and(cv2.inRange(depth_data, l1_upper, l1_lower), mask)
 
@@ -413,19 +419,21 @@ class Camera():
             cx = int(M['m10']/M['m00'])
             cy = int(M['m01']/M['m00'])
             # TODO: Might need to modify cz, using modified depth data now
-            cz = depth_data[cy][cx]
+            cz = self.DepthFrameRaw[cy][cx]
 
 
             cv2.putText(self.BlocksDetectedFrame , color, (cx-30, cy+40), font, 1.0, (0,0,0), thickness=2)
             cv2.putText(self.BlocksDetectedFrame , str(int(theta)), (cx, cy), font, 0.5, (255,255,255), thickness=2)
             cv2.putText(self.BlocksDetectedFrame , str(int(area)), (cx+50, cy), font, 1.0, (0,255,0), thickness=2)
 
-            #print(color, int(theta), cx, cy)
+
             layer = 1
             if(area > 1000):
                 self.block_detections.append(Block(u_v_d_to_world(cx,cy,cz), theta, color, "big", layer))
+                print(color, int(theta), cx, cy, "big")
             else:
                 self.block_detections.append(Block(u_v_d_to_world(cx,cy,cz), theta, color, "small", layer))
+                print(color, int(theta), cx, cy, "small")
             i += 1
 
         print("Block Detections: ")

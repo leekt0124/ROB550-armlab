@@ -210,11 +210,11 @@ class StateMachine():
             z = self.camera.DepthFrameRaw[uv_coords[1,i]][uv_coords[0,i]]
             c_coords[:,i] *= z
 
-        print(c_coords.shape)
-        print([float(1),float(1),float(1),float(1)])
+        #print(c_coords.shape)
+        #print([float(1),float(1),float(1),float(1)])
         c_coords = np.append(c_coords, [[float(1),float(1),float(1),float(1)]], axis=0)
         w_coords = np.matmul(np.linalg.inv(self.camera.extrinsic_matrix), c_coords)
-        print(w_coords)
+        #print(w_coords)
 
         # Cross product of tilted frame
         id1 = 1;
@@ -225,7 +225,7 @@ class StateMachine():
 
         w_points = np.append(np.expand_dims(w_coords[:3,id1], axis = 1),np.expand_dims(w_coords[:3,id2], axis = 1), axis = 1)
         w_points = np.append(w_points,np.expand_dims(cross_w, axis = 1), axis = 1)
-        print(w_points)
+        #print(w_points)
 
         # Cross product of true locations
         true_locations = np.transpose(self.camera.tag_locations)
@@ -235,13 +235,13 @@ class StateMachine():
 
         t_points = np.append(np.expand_dims(true_locations[:,id1], axis = 1),np.expand_dims(true_locations[:,id2], axis = 1), axis = 1)
         t_points = np.append(t_points,np.expand_dims(cross_t, axis = 1), axis = 1)
-        print(t_points)
+        #print(t_points)
 
         # Cross product for rotation axis
         rot_axis = np.cross(cross_w, cross_t)
         mag_rot=np.linalg.norm(rot_axis)
         rot_axis = rot_axis / mag_rot
-        print(rot_axis)
+        #print(rot_axis)
 
         # Angle of rotation
         dot_product = np.dot(cross_w, cross_t)
@@ -249,7 +249,7 @@ class StateMachine():
 
         # Quaternion rotation around the axis
         q_rotation = Quaternion(axis = rot_axis, angle = angle)
-        print(q_rotation)
+        #print(q_rotation)
 
         # From Quaternion to rotation
         #R = q_rotation.transformation_matrix
@@ -259,7 +259,7 @@ class StateMachine():
 
         self.camera.extrinsic_matrix = np.matmul(self.camera.extrinsic_matrix, np.linalg.inv(R))
         #
-        print(angle)
+        #print(angle)
         #print(R)
 
 
@@ -311,6 +311,12 @@ class StateMachine():
     def clear_waypoints(self):
         self.waypoints.arm_coords = []
         self.waypoints.gripper_state = []
+
+    def pick_click(self):
+        print(self.camera.last_click)
+
+    def place_click(self):
+        print(self.camera.last_click)
 
 class StateMachineThread(QThread):
     """!

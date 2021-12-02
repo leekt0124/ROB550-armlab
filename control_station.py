@@ -104,12 +104,16 @@ class Gui(QMainWindow):
         self.ui.btnUser7.clicked.connect(lambda: self.sm.add_gripper(0))
         self.ui.btnUser8.setText('Clear Waypoints')
         self.ui.btnUser8.clicked.connect(lambda: self.sm.clear_waypoints())
-        self.ui.btnUser9.setText('Save Waypoints to File')
-        self.ui.btnUser9.clicked.connect(lambda: self.sm.save_waypoints())
-        self.ui.btnUser10.setText('Load Waypoints From File')
-        self.ui.btnUser10.clicked.connect(lambda: self.sm.load_waypoints())
-        self.ui.btnUser11.setText('Block Detector')
-        self.ui.btnUser11.clicked.connect(lambda: self.camera.blockDetector())
+        #self.ui.btnUser9.setText('Save Waypoints to File')
+        #self.ui.btnUser9.clicked.connect(lambda: self.sm.save_waypoints())
+        #self.ui.btnUser10.setText('Load Waypoints From File')
+        #self.ui.btnUser10.clicked.connect(lambda: self.sm.load_waypoints())
+        self.ui.btnUser9.setText('Block Detector')
+        self.ui.btnUser9.clicked.connect(lambda: self.camera.blockDetector())
+        self.ui.btnUser10.setText('Pick clicked location')
+        self.ui.btnUser10.clicked.connect(lambda: self.sm.pick_click())
+        self.ui.btnUser11.setText('Place clicked location')
+        self.ui.btnUser11.clicked.connect(lambda: self.sm.place_click())
 
 
 
@@ -279,7 +283,7 @@ class Gui(QMainWindow):
         self.camera.last_click[0] = pt.x()
         self.camera.last_click[1] = pt.y()
         self.camera.new_click = True
-        # print(self.camera.last_click)
+        print(self.camera.last_click)
 
     def initRxarm(self):
         """!
