@@ -38,20 +38,23 @@ class StateMachine():
         self.current_state = "idle"
         self.next_state = "idle"
         self.gripper_state = 1
-        """
-        self.waypoints = [
-            [-np.pi/2,       -0.5,      -0.3,            0.0,       0.0],
-            [0.75*-np.pi/2,   0.5,      0.3,      0.0,       np.pi/2],
-            [0.5*-np.pi/2,   -0.5,     -0.3,     np.pi / 2,     0.0],
-            [0.25*-np.pi/2,   0.5,     0.3,     0.0,       np.pi/2],
-            [0.0,             0.0,      0.0,         0.0,     0.0],
-            [0.25*np.pi/2,   -0.5,      -0.3,      0.0,       np.pi/2],
-            [0.5*np.pi/2,     0.5,     0.3,     np.pi / 2,     0.0],
-            [0.75*np.pi/2,   -0.5,     -0.3,     0.0,       np.pi/2],
-            [np.pi/2,         0.5,     0.3,      0.0,     0.0],
-            [0.0,             0.0,     0.0,      0.0,     0.0]]
-        """
+
         self.waypoints = WaypointRecording()
+        # self.waypoints.arm_coords = [
+        #     [-np.pi/2,       -0.5,      -0.3,            0.0,       0.0],
+        #     [0.75*-np.pi/2,   0.5,      0.3,      0.0,       np.pi/2],
+        #     [0.5*-np.pi/2,   -0.5,     -0.3,     np.pi / 2,     0.0],
+        #     [0.25*-np.pi/2,   0.5,     0.3,     0.0,       np.pi/2],
+        #     [0.0,             0.0,      0.0,         0.0,     0.0],
+        #     [0.25*np.pi/2,   -0.5,      -0.3,      0.0,       np.pi/2],
+        #     [0.5*np.pi/2,     0.5,     0.3,     np.pi / 2,     0.0],
+        #     [0.75*np.pi/2,   -0.5,     -0.3,     0.0,       np.pi/2],
+        #     [np.pi/2,         0.5,     0.3,      0.0,     0.0],
+        #     [0.0,             0.0,     0.0,      0.0,     0.0]]
+
+        # self.waypoints.gripper_state = [1,1,1,1,1,1,1,1,1,1]
+
+
 
     def set_next_state(self, state):
         """!
@@ -128,6 +131,9 @@ class StateMachine():
         k_accel = 1.0/5
         min_move_time = 0.5
         self.status_message = "State: Execute - Executing motion plan"
+        # current_position = self.rxarm.get_positions()
+        # print(current_position)
+        # print(type(current_position))
         for i in range(len(self.waypoints.arm_coords)):
             current_position = self.rxarm.get_positions() # Get current position
             next_position = self.waypoints.arm_coords[i] # Get next position
@@ -155,6 +161,7 @@ class StateMachine():
                 self.rxarm.close_gripper()
             rospy.sleep(1.0)
         self.next_state = "idle"
+        self.clear_waypoints()
 
     def calibrate(self):
         """!
@@ -185,7 +192,6 @@ class StateMachine():
         #print("U V coordinates")
         #print(tag_position_i)
         #tag_position_i = tag_position_i
-        self.camera.processDepthFrame()
         self.status_message = "Calibration - Completed Calibration"
 
 
@@ -261,9 +267,11 @@ class StateMachine():
         #
         #print(angle)
         #print(R)
+        self.camera.processDepthFrame()
 
 
         print(self.camera.extrinsic_matrix)
+
 
     """ TODO """
     def detect(self):
@@ -313,10 +321,98 @@ class StateMachine():
         self.waypoints.gripper_state = []
 
     def pick_click(self):
+        print('Camera Coordinates')
         print(self.camera.last_click)
+        x = self.camera.last_click[0]
+        y = self.camera.last_click[1]
+        z = self.camera.DepthFrameRaw[y][x]
+        # from click get world coordinates
+        w_coords = self.camera.u_v_d_to_world(x,y,z)
+
+        # Append phi angle to w_coords
+        w_coords = np.append(w_coords, 140)
+
+        # Increase z by 30 mm (avoid hitting ground)
+        w_coords_up = w_coords.copy()
+        w_coords_down = w_coords.copy()
+        w_coords_up[2] += 80.0
+        w_coords_down[2] += 5.0
+
+        # w_coords.append(np.pi - 0.02)
+        print('World Coordinates up')
+        print(w_coords_up)
+        print('World Coordinates down')
+        print(w_coords_down)
+
+        # IK
+        block_rot = 0;
+
+        joint_angles_up = self.rxarm.world_to_joint(w_coords_up)
+        joint_angles_up = np.append(joint_angles_up, block_rot)
+        joint_angles_up.flatten()
+        self.waypoints.arm_coords.append(joint_angles_up)
+        self.waypoints.gripper_state.append(1)
+        # print(self.waypoints.arm_coords)
+
+        joint_angles_down = self.rxarm.world_to_joint(w_coords_down)
+        joint_angles_down = np.append(joint_angles_down, block_rot)
+        joint_angles_down.flatten()
+        self.waypoints.arm_coords.append(joint_angles_down)
+        self.waypoints.gripper_state.append(0)
+
+        self.waypoints.arm_coords.append(joint_angles_up)
+        self.waypoints.gripper_state.append(0)
+        # print(self.waypoints.arm_coords)
+
+        # define trajectory based on click
+        # use inverse kinematics to calculate joint position
+        # Add to join positions waypoint to self.waypoints
+        # make sure end effector closes at the end
+
 
     def place_click(self):
+        print('Camera Coordinates')
         print(self.camera.last_click)
+        x = self.camera.last_click[0]
+        y = self.camera.last_click[1]
+        z = self.camera.DepthFrameRaw[y][x]
+        # from click get world coordinates
+        w_coords = self.camera.u_v_d_to_world(x,y,z)
+
+        # Append phi angle to w_coords
+        w_coords = np.append(w_coords, 140)
+
+        # Increase z by 30 mm (avoid hitting ground)
+        w_coords_up = w_coords.copy()
+        w_coords_down = w_coords.copy()
+        w_coords_up[2] += 80.0
+        w_coords_down[2] += 40.0
+
+        # w_coords.append(np.pi - 0.02)
+        print('World Coordinates up')
+        print(w_coords_up)
+        print('World Coordinates down')
+        print(w_coords_down)
+
+        # IK
+        block_rot = 0;
+
+        joint_angles_up = self.rxarm.world_to_joint(w_coords_up)
+        joint_angles_up = np.append(joint_angles_up, block_rot)
+        joint_angles_up.flatten()
+        self.waypoints.arm_coords.append(joint_angles_up)
+        self.waypoints.gripper_state.append(0)
+        # print(self.waypoints.arm_coords)
+
+        joint_angles_down = self.rxarm.world_to_joint(w_coords_down)
+        joint_angles_down = np.append(joint_angles_down, block_rot)
+        joint_angles_down.flatten()
+        self.waypoints.arm_coords.append(joint_angles_down)
+        self.waypoints.gripper_state.append(1)
+        # same as pick but open end effector at the end
+
+        self.waypoints.arm_coords.append(joint_angles_up)
+        self.waypoints.gripper_state.append(1)
 
 class StateMachineThread(QThread):
     """!

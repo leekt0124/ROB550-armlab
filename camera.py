@@ -227,6 +227,18 @@ class Camera():
         """
         pass
 
+    def u_v_d_to_world(self,u,v,d):
+        z = d
+
+        uv_coords = np.array([float(u), float(v), float(1)])
+        intrinsic_inv = np.linalg.inv(self.intrinsic_matrix)
+
+        c_coords =  np.matmul(intrinsic_inv, uv_coords)
+        c_coords *= z
+        c_coords = np.append(c_coords, [float(1)], axis=0)
+        w_coords = np.matmul(np.linalg.inv(self.extrinsic_matrix), c_coords)
+        return w_coords[:3]
+
     def blockDetector(self):
         """!
         @brief      Detect blocks from rgb
@@ -341,14 +353,20 @@ class Camera():
         )
 
         # TODO: Populate this
-        colors_hsv = list((
+        colors_hsv_ro = list((
             {'id': 'red', 'color': (0, 170, 90)},
             {'id': 'red', 'color': (30, 170, 90)},
             {'id': 'orange', 'color': (10, 180, 180)})
+        )
+
+        colors_hsv_gbv = list((
+#            {'id': 'red', 'color': (0, 170, 90)},
+#            {'id': 'red', 'color': (30, 170, 90)},
+#            {'id': 'orange', 'color': (10, 180, 180)})
 #            {'id': 'yellow', 'color': (25, 220, 204)},
-#            {'id': 'green', 'color': (70, 213, 61)},
-#            {'id': 'blue', 'color': (104, 203, 94)},
-#            {'id': 'violet', 'color': (115, 102, 95)})
+            {'id': 'green', 'color': (70, 213, 61)},
+            {'id': 'blue', 'color': (104, 203, 94)},
+            {'id': 'violet', 'color': (120, 102, 95)})
         )
 
         def retrieve_area_color_rgb(data, contour, labels):
@@ -362,7 +380,9 @@ class Camera():
                     if d < min_dist[0]:
                         min_dist = (d, label["id"])
                 if(min_dist[1] == "red" or min_dist[1] == "orange"):
-                    return retrieve_area_color_hsv(hsv_image, contour, colors_hsv)
+                    return retrieve_area_color_hsv(hsv_image, contour, colors_hsv_ro)
+                elif((min_dist[1] == "green" or min_dist[1] == "blue") or min_dist[1] == "violet"):
+                    return retrieve_area_color_hsv(hsv_image, contour, colors_hsv_gbv)
                 return min_dist[1]
 
         def retrieve_area_color_hsv(data, contour, labels):
@@ -376,18 +396,6 @@ class Camera():
                     min_dist = (d, label["id"])
             print("~~")
             return min_dist[1]
-
-        def u_v_d_to_world(u,v,d):
-            z = d
-
-            uv_coords = np.array([float(u), float(v), float(1)])
-            intrinsic_inv = np.linalg.inv(self.intrinsic_matrix)
-
-            c_coords =  np.matmul(intrinsic_inv, uv_coords)
-            c_coords *= z
-            c_coords = np.append(c_coords, [float(1)], axis=0)
-            w_coords = np.matmul(np.linalg.inv(self.extrinsic_matrix), c_coords)
-            return w_coords[:3]
 
         def is_contour_bad(c):
             # Check size
@@ -429,11 +437,11 @@ class Camera():
 
             layer = 1
             if(area > 1000):
-                self.block_detections.append(Block(u_v_d_to_world(cx,cy,cz), theta, color, "big", layer))
-                print(color, int(theta), cx, cy, "big")
+                self.block_detections.append(Block(self.u_v_d_to_world(cx,cy,cz), theta, color, "big", layer))
+                print(color, int(theta), cx, cy, "big", self.u_v_d_to_world(cx,cy,cz))
             else:
-                self.block_detections.append(Block(u_v_d_to_world(cx,cy,cz), theta, color, "small", layer))
-                print(color, int(theta), cx, cy, "small")
+                self.block_detections.append(Block(self.u_v_d_to_world(cx,cy,cz), theta, color, "small", layer))
+                print(color, int(theta), cx, cy, "small", self.u_v_d_to_world(cx,cy,cz))
             i += 1
 
         print("Block Detections: ")

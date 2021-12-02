@@ -283,7 +283,7 @@ class Gui(QMainWindow):
         self.camera.last_click[0] = pt.x()
         self.camera.last_click[1] = pt.y()
         self.camera.new_click = True
-        print(self.camera.last_click)
+        #print(self.camera.last_click)
 
     def initRxarm(self):
         """!

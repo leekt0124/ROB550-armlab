@@ -187,7 +187,10 @@ class RXArm(InterbotixRobot):
 #   @_ensure_initialized
     def get_IK(self):
         ee_pose = self.get_ee_pose()
-        print(IK_geometric(self.dh_params, ee_pose))
+        IK_geometric(self.dh_params, ee_pose)
+
+    def world_to_joint(self, w_coords):
+        return IK_geometric(self.dh_params, w_coords)
 
 
     def get_ee_pose(self):
@@ -250,7 +253,7 @@ class RXArmThread(QThread):
         @param      parent  The parent
         @details    TODO: set any additional initial parameters (like PID gains) here
         """
-        self.pid_gains={rxarm.joint_names[0]:[9000,0,3600],rxarm.joint_names[1]:[16000,0,0],rxarm.joint_names[2]:[5000,3000,0],rxarm.joint_names[3]:[800,1000,0],rxarm.joint_names[4]:[640,1000,3600],rxarm.joint_names[5]:[640,10,3600]}
+        self.pid_gains={rxarm.joint_names[0]:[900,0,3600],rxarm.joint_names[1]:[1600,0,0],rxarm.joint_names[2]:[1000,300,0],rxarm.joint_names[3]:[800,100,0],rxarm.joint_names[4]:[640,100,3600],rxarm.joint_names[5]:[640,10,3600]}
         # self.pid_gains={rxarm.joint_names[0]:[640,0,3600],rxarm.joint_names[1]:[800,0,0],rxarm.joint_names[2]:[800,0,0],rxarm.joint_names[3]:[800,0,0],rxarm.joint_names[4]:[640,0,3600],rxarm.joint_names[5]:[640,0,3600]}
         print(rxarm.joint_names)
 
@@ -268,8 +271,8 @@ class RXArmThread(QThread):
         self.rxarm.effort_fb = np.asarray(data.effort)[0:5]
         self.updateJointReadout.emit(self.rxarm.position_fb.tolist())
         # TODO: uncomment, preventing HSV tuning because broken
-        #self.rxarm.get_IK()
-        #self.updateEndEffectorReadout.emit(self.rxarm.get_ee_pose())
+        self.rxarm.get_IK()
+        self.updateEndEffectorReadout.emit(self.rxarm.get_ee_pose())
         #for name in self.rxarm.joint_names:
         #    print("{0} gains: {1}".format(name, self.rxarm.get_motor_pid_params(name)))
         # TODO: Commented this out for camera testing purposes
