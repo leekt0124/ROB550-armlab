@@ -143,8 +143,6 @@ class Camera():
 
 #        self.depth_mean = (depth_data[top_v][left_u] + depth_data[bottom_v][left_u] + depth_data[top_v][right_u] + depth_data[bottom_v][right_u])/4# 950#905
 
-
-
     def convertQtVideoFrame(self):
         """!
         @brief      Converts frame to format suitable for Qt
@@ -258,6 +256,15 @@ class Camera():
         # TODO: Find blocks higher than one stack
         # - probably need to do contours for each depth threshold
 
+        # Enumerate different block stack possibilities
+        # We are only given stacks of up to 4, small on big or small on small in mixed stacks
+        stack_heights = [
+            [25,38], #s,b
+            [50,63,76], #ss,bs,bb
+            [75,88,101,114], #sss,bss,bbs,bbb
+            [100,113,126,139,152] #ssss,bsss,bbss,bbbs,bbbb
+        ]
+
         # Delete blocks
         # TODO: Remove reset for persistence after testing Done
         # TODO: Check if block already in list before adding it
@@ -300,18 +307,18 @@ class Camera():
         depth_mean = (depth_data[top_v][left_u] + depth_data[bottom_v][left_u] + depth_data[top_v][right_u] + depth_data[bottom_v][right_u])/4# 950#905
 
 
-        print(depth_data[top_v][left_u])
-        print(depth_data[bottom_v][left_u])
-        print(depth_data[top_v][right_u])
-        print(depth_data[bottom_v][right_u])
+        #print(depth_data[top_v][left_u])
+        #print(depth_data[bottom_v][left_u])
+        #print(depth_data[top_v][right_u])
+        #print(depth_data[bottom_v][right_u])
 
         l1_lower = depth_mean - l1_min + l1_error
         l1_upper = depth_mean - l1_max - l1_error
 
-        print("generated thresholds:")
-        print(l1_lower)
-        print(l1_upper)
-        print("~~~~~~")
+        #print("generated thresholds:")
+        #print(l1_lower)
+        #print(l1_upper)
+        #print("~~~~~~")
 
         #cv2.namedWindow("Threshold window", cv2.WINDOW_NORMAL)
         """mask out arm & outside board"""
@@ -330,7 +337,7 @@ class Camera():
         cv2.drawContours(self.BlocksDetectedFrame, self.block_contours, -1, (255, 0, 255), 3)
         #print(self.block_contours)
         num_contours = np.shape(self.block_contours)[0]
-        print(num_contours)
+        #print(num_contours)
 
         # Reset block detections
         '''
@@ -344,7 +351,7 @@ class Camera():
 
         # RGB Color List
         colors = list((
-            {'id': 'red', 'color': (10, 10, 127)},
+            {'id': 'red', 'color': (40, 40, 127)},
             {'id': 'orange', 'color': (30, 75, 150)},
             {'id': 'yellow', 'color': (30, 150, 200)},
             {'id': 'green', 'color': (20, 60, 20)},
@@ -355,7 +362,8 @@ class Camera():
         # TODO: Populate this
         colors_hsv_ro = list((
             {'id': 'red', 'color': (0, 170, 90)},
-            {'id': 'red', 'color': (30, 170, 90)},
+            {'id': 'red', 'color': (60, 170, 90)},
+            {'id': 'yellow', 'color': (25, 220, 204)},
             {'id': 'orange', 'color': (10, 180, 180)})
         )
 
@@ -366,20 +374,24 @@ class Camera():
 #            {'id': 'yellow', 'color': (25, 220, 204)},
             {'id': 'green', 'color': (70, 213, 61)},
             {'id': 'blue', 'color': (104, 203, 94)},
-            {'id': 'violet', 'color': (120, 102, 95)})
+            {'id': 'violet', 'color': (115, 140, 95)})
         )
 
         def retrieve_area_color_rgb(data, contour, labels):
                 mask = np.zeros(data.shape[:2], dtype="uint8")
                 cv2.drawContours(mask, [contour], -1, 255, -1)
                 mean = cv2.mean(data, mask=mask)[:3]
-
+                print("RGB MEAN!~!!!!!!")
+                print(mean)
                 min_dist = (np.inf, None)
                 for label in labels:
                     d = np.linalg.norm(label["color"] - np.array(mean))
                     if d < min_dist[0]:
                         min_dist = (d, label["id"])
-                if(min_dist[1] == "red" or min_dist[1] == "orange"):
+
+                print("found color: ")
+                print(min_dist[1])
+                if(min_dist[1] == "red" or min_dist[1] == "orange" or min_dist[1] == "yellow"):
                     return retrieve_area_color_hsv(hsv_image, contour, colors_hsv_ro)
                 elif((min_dist[1] == "green" or min_dist[1] == "blue") or min_dist[1] == "violet"):
                     return retrieve_area_color_hsv(hsv_image, contour, colors_hsv_gbv)
@@ -389,12 +401,15 @@ class Camera():
             mask = np.zeros(data.shape[:2], dtype="uint8")
             cv2.drawContours(mask, [contour], -1, 255, -1)
             mean = cv2.mean(data, mask=mask)[:3]
+            print("HSV MEAN:")
+            print(mean)
             min_dist = (np.inf, None)
             for label in labels:
                 d = math.sqrt(abs(label["color"][0] * label["color"][0] - mean[0]*mean[0]))
                 if d < min_dist[0]:
                     min_dist = (d, label["id"])
-            print("~~")
+            print("Found min: ")
+            print(min_dist[1])
             return min_dist[1]
 
         def is_contour_bad(c):
@@ -407,7 +422,7 @@ class Camera():
             # Check if square
 
         #self.block_detections = np.zeros((num_contours,3))
-        print(np.shape(self.block_detections))
+        #print(np.shape(self.block_detections))
         i = 0
         for contour in self.block_contours:
             #print("RGB COLOR MATCHING")
@@ -431,8 +446,8 @@ class Camera():
 
 
             cv2.putText(self.BlocksDetectedFrame , color, (cx-30, cy+40), font, 1.0, (0,0,0), thickness=2)
-            cv2.putText(self.BlocksDetectedFrame , str(int(theta)), (cx, cy), font, 0.5, (255,255,255), thickness=2)
-            cv2.putText(self.BlocksDetectedFrame , str(int(area)), (cx+50, cy), font, 1.0, (0,255,0), thickness=2)
+            cv2.putText(self.BlocksDetectedFrame , str(int(theta)), (cx+50, cy), font, 0.5, (0,255,0), thickness=2)
+            #cv2.putText(self.BlocksDetectedFrame , str(int(area)), (cx+50, cy), font, 1.0, (0,255,0), thickness=2)
 
 
             layer = 1
@@ -444,8 +459,8 @@ class Camera():
                 print(color, int(theta), cx, cy, "small", self.u_v_d_to_world(cx,cy,cz))
             i += 1
 
-        print("Block Detections: ")
-        print(self.block_detections)
+        #print("Block Detections: ")
+        #print(self.block_detections)
 
         cv2.drawContours(self.BlocksDetectedFrame, self.block_contours, -1, (255, 0, 255), 3)
         #self.processVideoFrame()

@@ -228,27 +228,49 @@ def IK_geometric(dh_params, pose):
     # print(l2 ** 2)
     # print(l3 ** 2)
     # print((r ** 2 + s ** 2 - l2 ** 2 - l3 ** 2) / (2 * l2 * l3))
+    sign_list = [-1, 1]
+    IK_output_list = []
+    IK_angle_list = []
 
-    theta3 = - np.arccos((r ** 2 + s ** 2 - l2 ** 2 - l3 ** 2) / (2 * l2 * l3))
-    theta2 = np.arctan2(s, r) - np.arctan2(l3 * np.sin(theta3), l2 + l3 * np.cos(theta3))
-    # print('ang 1 = ', np.arctan2(s, r))
-    # print('ang 2 = ', np.arctan2(l3 * np.sin(theta3), l2 + l3 * np.cos(theta3)))
+    for sign in sign_list:
 
-    theta4 = - phi - (theta2 + theta3)
-    # print("theta1 = ", theta1 * R2D, " theta2 = ", theta2 * R2D, " theta3 = ", theta3 * R2D, " theta4 = ", theta4 * R2D)
-    # Transform from theta to joint angle
-    angle1 = theta1
-    angle2 = np.pi / 2.0 - theta2 - l2_offset
-    angle3 = np.pi / 2.0 + theta3 - l2_offset
-    angle4 = theta4
-    # print(np.pi / 2)
 
-    # print(angle1, angle2, angle3, angle4)
+        theta3 = sign * np.arccos((r ** 2 + s ** 2 - l2 ** 2 - l3 ** 2) / (2 * l2 * l3))
+        theta2 = np.arctan2(s, r) - np.arctan2(l3 * np.sin(theta3), l2 + l3 * np.cos(theta3))
+        # print('ang 1 = ', np.arctan2(s, r))
+        # print('ang 2 = ', np.arctan2(l3 * np.sin(theta3), l2 + l3 * np.cos(theta3)))
 
-    # IK_output = np.array([[angle1 * R2D, angle2 * R2D, angle3 * R2D, angle4 * R2D]])
-    # print(np.array([[angle1 * R2D, angle2 * R2D, angle3 * R2D, angle4 * R2D]]))
-    IK_output = np.array([[angle1, angle2, angle3, angle4]])
-    # IK_output = np.array([[0, 0, 0, 0]])
+        theta4 = - phi - (theta2 + theta3)
+        # print("theta1 = ", theta1 * R2D, " theta2 = ", theta2 * R2D, " theta3 = ", theta3 * R2D, " theta4 = ", theta4 * R2D)
+        # Transform from theta to joint angle
+        angle1 = theta1
+        angle2 = np.pi / 2.0 - theta2 - l2_offset
+        angle3 = np.pi / 2.0 + theta3 - l2_offset
+        angle4 = theta4
+        # print(np.pi / 2)
+
+        # print(angle1, angle2, angle3, angle4)
+
+        # IK_output = np.array([[angle1 * R2D, angle2 * R2D, angle3 * R2D, angle4 * R2D]])
+        # print(np.array([[angle1 * R2D, angle2 * R2D, angle3 * R2D, angle4 * R2D]]))
+
+
+        IK_output = np.array([[clamp(angle1), clamp(angle2), clamp(angle3), clamp(angle4)]])
+        IK_angle = np.array([[angle1 * R2D, angle2 * R2D, angle3 * R2D, angle4 * R2D]])
+
+        IK_output_list.append(IK_output)
+        IK_angle_list.append(IK_angle)
+
+    # print("IK_angle_list = ", IK_angle_list)
+
+    for output in IK_output_list:
+        output_sum = np.sum(output)
+        if (not np.isnan(output_sum)):
+            return output
+
+    return np.array([[float('NaN'), float('NaN'), float('NaN'), float('NaN')]])
+
+
 
 
 

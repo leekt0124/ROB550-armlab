@@ -114,6 +114,8 @@ class Gui(QMainWindow):
         self.ui.btnUser10.clicked.connect(lambda: self.sm.pick_click())
         self.ui.btnUser11.setText('Place clicked location')
         self.ui.btnUser11.clicked.connect(lambda: self.sm.place_click())
+        self.ui.btnUser12.setText('PICK AND SORT')
+        self.ui.btnUser12.clicked.connect(lambda: self.sm.pick_sort())
 
 
 

@@ -11,6 +11,10 @@ import csv
 import math
 from pyquaternion import Quaternion
 from scipy.spatial.transform import Rotation as R
+from kinematics import clamp
+
+D2R = np.pi / 180.0
+R2D = 180.0 / np.pi
 
 class WaypointRecording():
     def __init__(self):
@@ -127,30 +131,35 @@ class StateMachine():
               Make sure you respect estop signal
         """
         #self.rxarm.set_moving_time(2.0)
-        k_move = 2.5
-        k_accel = 1.0/5
+        k_move = 1.2
+        k_accel = 1.0/10
         min_move_time = 0.5
         self.status_message = "State: Execute - Executing motion plan"
         # current_position = self.rxarm.get_positions()
         # print(current_position)
         # print(type(current_position))
         for i in range(len(self.waypoints.arm_coords)):
-            current_position = self.rxarm.get_positions() # Get current position
+            current_position = self.rxarm.get_positions()# Get current position
+            current_position = [clamp(deg) for deg in current_position]
             next_position = self.waypoints.arm_coords[i] # Get next position
-            difference = np.absolute(np.subtract(current_position, next_position)) # Difference between current and next position
-            print('Difference Position')
-            print(difference)
+            next_position = [clamp(deg) for deg in next_position]
+            print("next_position = ", next_position)
+            difference = np.absolute(np.subtract(current_position[:-1], next_position[:-1])) # Difference between current and next position
+            #print('Difference Position')
+            #print(difference)
             max_angle_disp = np.amax(difference)# Find highest angle displacement
             print('Max Displacement')
             print(max_angle_disp)
             moving_time = k_move * max_angle_disp# Multiply the above by constant to get time
-            if (moving_time < min_move_time):
-                moving_time = min_move_time
-            print('Moving Time')
-            print(moving_time)
+            print("max_ang = ", max_angle_disp)
+            print("moving_time = ", moving_time)
+#            if (moving_time < min_move_time):
+#                moving_time = min_move_time
+            #print('Moving Time')
+            #print(moving_time)
             accel_time = k_accel * moving_time
-            print('Acceleration Time')
-            print(accel_time)
+            #print('Acceleration Time')
+            #print(accel_time)
             self.rxarm.set_moving_time(moving_time)# Do set moving time
             self.rxarm.set_accel_time(accel_time)
             self.rxarm.set_positions(next_position)
@@ -159,7 +168,7 @@ class StateMachine():
                 self.rxarm.open_gripper()
             else:
                 self.rxarm.close_gripper()
-            rospy.sleep(1.0)
+            rospy.sleep(0.1)
         self.next_state = "idle"
         self.clear_waypoints()
 
@@ -329,39 +338,72 @@ class StateMachine():
         # from click get world coordinates
         w_coords = self.camera.u_v_d_to_world(x,y,z)
 
+        self.pick(w_coords)
+
+    def pick(self, w_coords, block_theta=0):
         # Append phi angle to w_coords
-        w_coords = np.append(w_coords, 140)
+
+        phi_i = 175
+        phi = phi_i
+        w_coords = np.append(w_coords, phi)
 
         # Increase z by 30 mm (avoid hitting ground)
         w_coords_up = w_coords.copy()
         w_coords_down = w_coords.copy()
         w_coords_up[2] += 80.0
-        w_coords_down[2] += 5.0
 
-        # w_coords.append(np.pi - 0.02)
-        print('World Coordinates up')
-        print(w_coords_up)
-        print('World Coordinates down')
-        print(w_coords_down)
+        if w_coords_down[2] < 5.0:
+            w_coords_down[2] += 20.0
+
+        # # w_coords.append(np.pi - 0.02)
+        # print('World Coordinates up')
+        # print(w_coords_up)
+        # print('World Coordinates down')
+        # print(w_coords_down)
 
         # IK
-        block_rot = 0;
+        # block_rot = 0;
+
+        while ((any(np.isnan(self.rxarm.world_to_joint(w_coords_up)[0])) or any(np.isnan(self.rxarm.world_to_joint(w_coords_down)[0]))) and phi >= 80):
+            print("trying phi = ", phi)
+            phi -= 5
+            w_coords[3] = phi
+
+            # Increase z by 30 mm (avoid hitting ground)
+            w_coords_up = w_coords.copy()
+            w_coords_down = w_coords.copy()
+            w_coords_up[2] += 80.0
+
+            if w_coords_down[2] < 5.0:
+                w_coords_down[2] += 20.0
+
+
 
         joint_angles_up = self.rxarm.world_to_joint(w_coords_up)
-        joint_angles_up = np.append(joint_angles_up, block_rot)
+
         joint_angles_up.flatten()
+        if phi == phi_i:
+            block_rot = clamp(D2R * (block_theta + 90 + R2D * (joint_angles_up[0][0])))
+        else:
+            block_rot = 0
+        # if block_rot < 0:
+        #     block_rot += 180
+        joint_angles_up = np.append(joint_angles_up, block_rot)
         self.waypoints.arm_coords.append(joint_angles_up)
         self.waypoints.gripper_state.append(1)
         # print(self.waypoints.arm_coords)
 
         joint_angles_down = self.rxarm.world_to_joint(w_coords_down)
-        joint_angles_down = np.append(joint_angles_down, block_rot)
         joint_angles_down.flatten()
+        joint_angles_down = np.append(joint_angles_down, block_rot)
+
         self.waypoints.arm_coords.append(joint_angles_down)
         self.waypoints.gripper_state.append(0)
 
         self.waypoints.arm_coords.append(joint_angles_up)
         self.waypoints.gripper_state.append(0)
+
+        self.execute()
         # print(self.waypoints.arm_coords)
 
         # define trajectory based on click
@@ -378,41 +420,96 @@ class StateMachine():
         z = self.camera.DepthFrameRaw[y][x]
         # from click get world coordinates
         w_coords = self.camera.u_v_d_to_world(x,y,z)
+        self.place(w_coords)
 
+    def place(self, w_coords, block_theta=0):
         # Append phi angle to w_coords
-        w_coords = np.append(w_coords, 140)
+        phi_i = 175
+        phi = phi_i
+        w_coords = np.append(w_coords, phi)
 
         # Increase z by 30 mm (avoid hitting ground)
         w_coords_up = w_coords.copy()
         w_coords_down = w_coords.copy()
         w_coords_up[2] += 80.0
-        w_coords_down[2] += 40.0
+        w_coords_down[2] += 30.0
 
         # w_coords.append(np.pi - 0.02)
-        print('World Coordinates up')
-        print(w_coords_up)
-        print('World Coordinates down')
-        print(w_coords_down)
+        # print('World Coordinates up')
+        # print(w_coords_up)
+        # print('World Coordinates down')
+        # print(w_coords_down)
 
         # IK
-        block_rot = 0;
+
+        while ((any(np.isnan(self.rxarm.world_to_joint(w_coords_up)[0])) or any(np.isnan(self.rxarm.world_to_joint(w_coords_down)[0]))) and phi >= 80):
+            print("trying phi = ", phi)
+            phi -= 5
+            w_coords[3] = phi
+
+            # Increase z by 30 mm (avoid hitting ground)
+            w_coords_up = w_coords.copy()
+            w_coords_down = w_coords.copy()
+            w_coords_up[2] += 80.0
+
+            if w_coords_down[2] < 5.0:
+                w_coords_down[2] += 20.0
+
 
         joint_angles_up = self.rxarm.world_to_joint(w_coords_up)
-        joint_angles_up = np.append(joint_angles_up, block_rot)
+        print("first = ", joint_angles_up)
+
         joint_angles_up.flatten()
+        print("second = ", joint_angles_up)
+
+        if phi == phi_i:
+            block_rot = clamp(D2R * (block_theta + 90 + R2D * (joint_angles_up[0][0])))
+        else:
+            block_rot = 0
+        # if block_rot < 0:
+        #     block_rot += 180
+        print("block_rot = ", block_rot)
+        joint_angles_up = np.append(joint_angles_up, block_rot)
+
         self.waypoints.arm_coords.append(joint_angles_up)
         self.waypoints.gripper_state.append(0)
         # print(self.waypoints.arm_coords)
 
         joint_angles_down = self.rxarm.world_to_joint(w_coords_down)
-        joint_angles_down = np.append(joint_angles_down, block_rot)
+
         joint_angles_down.flatten()
+        joint_angles_down = np.append(joint_angles_down, block_rot)
         self.waypoints.arm_coords.append(joint_angles_down)
         self.waypoints.gripper_state.append(1)
         # same as pick but open end effector at the end
 
         self.waypoints.arm_coords.append(joint_angles_up)
         self.waypoints.gripper_state.append(1)
+
+        self.execute()
+
+    def pick_sort(self):
+
+        destination_right = [[155,50,0],[155,-30,0],[205,-110,0]]
+        destination_left = [[-155,50,0],[-155,-30,0],[-205,-110,0]]
+        self.camera.blockDetector()
+
+        i = 0
+        j = 0
+        for block in self.camera.block_detections:
+            w_coords = block.coord
+            print(w_coords)
+            self.pick(w_coords, block.theta)
+            if(block.size == "big"):
+                self.place(destination_right[i], 0)
+                i += 1
+            else:
+                self.place(destination_left[j], 0)
+                j += 1
+        self.rxarm.sleep()
+
+
+
 
 class StateMachineThread(QThread):
     """!

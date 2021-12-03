@@ -271,7 +271,7 @@ class RXArmThread(QThread):
         self.rxarm.effort_fb = np.asarray(data.effort)[0:5]
         self.updateJointReadout.emit(self.rxarm.position_fb.tolist())
         # TODO: uncomment, preventing HSV tuning because broken
-        self.rxarm.get_IK()
+        # self.rxarm.get_IK()
         self.updateEndEffectorReadout.emit(self.rxarm.get_ee_pose())
         #for name in self.rxarm.joint_names:
         #    print("{0} gains: {1}".format(name, self.rxarm.get_motor_pid_params(name)))
