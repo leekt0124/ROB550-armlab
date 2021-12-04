@@ -254,7 +254,7 @@ class RXArmThread(QThread):
         @details    TODO: set any additional initial parameters (like PID gains) here
         """
         self.pid_gains={rxarm.joint_names[0]:[900,0,3600],rxarm.joint_names[1]:[1600,0,0],rxarm.joint_names[2]:[1000,300,0],rxarm.joint_names[3]:[800,100,0],rxarm.joint_names[4]:[640,100,3600],rxarm.joint_names[5]:[640,10,3600]}
-        # self.pid_gains={rxarm.joint_names[0]:[640,0,3600],rxarm.joint_names[1]:[800,0,0],rxarm.joint_names[2]:[800,0,0],rxarm.joint_names[3]:[800,0,0],rxarm.joint_names[4]:[640,0,3600],rxarm.joint_names[5]:[640,0,3600]}
+        #self.pid_gains={rxarm.joint_names[0]:[640,0,3600],rxarm.joint_names[1]:[800,0,0],rxarm.joint_names[2]:[800,0,0],rxarm.joint_names[3]:[800,0,0],rxarm.joint_names[4]:[640,0,3600],rxarm.joint_names[5]:[640,0,3600]}
         print(rxarm.joint_names)
 
         for joint_name in self.pid_gains.keys():

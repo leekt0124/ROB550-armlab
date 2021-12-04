@@ -149,16 +149,16 @@ class StateMachine():
             current_position = [clamp(deg) for deg in current_position]
             next_position = self.waypoints.arm_coords[i] # Get next position
             next_position = [clamp(deg) for deg in next_position]
-            print("next_position = ", next_position)
+            # print("next_position = ", next_position)
             difference = np.absolute(np.subtract(current_position[:-1], next_position[:-1])) # Difference between current and next position
-            #print('Difference Position')
-            #print(difference)
+            # print('Difference Position')
+            # print(difference)
             max_angle_disp = np.amax(difference)# Find highest angle displacement
-            print('Max Displacement')
-            print(max_angle_disp)
+            # print('Max Displacement')
+            # print(max_angle_disp)
             moving_time = k_move * max_angle_disp# Multiply the above by constant to get time
-            print("max_ang = ", max_angle_disp)
-            print("moving_time = ", moving_time)
+            # print("max_ang = ", max_angle_disp)
+            # print("moving_time = ", moving_time)
 #            if (moving_time < min_move_time):
 #                moving_time = min_move_time
             #print('Moving Time')
@@ -322,9 +322,9 @@ class StateMachine():
             for i in range(len(self.waypoints.arm_coords)):
                 writer.writerow(self.waypoints.arm_coords[i][0])
                 writer.writerow(self.waypoints.gripper_state[i][0])
-                print(type(self.waypoints.arm_coords))
-                print(self.waypoints.arm_coords[i])
-                print(self.waypoints.arm_coords[i][0])
+                # print(type(self.waypoints.arm_coords))
+                # print(self.waypoints.arm_coords[i])
+                # print(self.waypoints.arm_coords[i][0])
     def load_waypoints(self):
         with open("teach_repeat.csv", "r") as file:
             reader = csv.reader(file, delimeter = '\t')
@@ -344,9 +344,9 @@ class StateMachine():
         # from click get world coordinates
         w_coords = self.camera.u_v_d_to_world(x,y,z)
 
-        self.pick(w_coords)
+        self.pick("big",w_coords)
 
-    def pick(self, w_coords, block_theta=0):
+    def pick(self, block_size, w_coords, block_theta=0):
         # Append phi angle to w_coords
 
         phi_i = 175
@@ -356,7 +356,8 @@ class StateMachine():
         # Increase z by 30 mm (avoid hitting ground)
         w_coords_up = w_coords.copy()
         w_coords_down = w_coords.copy()
-        w_coords_up[2] += 80.0
+
+        w_coords_up[2] += 200.0
 
         if w_coords_down[2] < 5.0:
             w_coords_down[2] += 20.0
@@ -371,7 +372,7 @@ class StateMachine():
         # block_rot = 0;
 
         while ((any(np.isnan(self.rxarm.world_to_joint(w_coords_up)[0])) or any(np.isnan(self.rxarm.world_to_joint(w_coords_down)[0]))) and phi >= 80):
-            print("trying phi = ", phi)
+#            print("trying phi = ", phi)
             phi -= 5
             w_coords[3] = phi
 
@@ -383,6 +384,10 @@ class StateMachine():
             if w_coords_down[2] < 5.0:
                 w_coords_down[2] += 20.0
 
+
+
+        if block_size == "small":
+                w_coords_down[2] += 5
 
 
         joint_angles_up = self.rxarm.world_to_joint(w_coords_up)
@@ -438,7 +443,7 @@ class StateMachine():
         # Increase z by 30 mm (avoid hitting ground)
         w_coords_up = w_coords.copy()
         w_coords_down = w_coords.copy()
-        w_coords_up[2] += 80.0
+        w_coords_up[2] += 200.0
         w_coords_down[2] += 30.0
 
         # w_coords.append(np.pi - 0.02)
@@ -450,7 +455,7 @@ class StateMachine():
         # IK
 
         while ((any(np.isnan(self.rxarm.world_to_joint(w_coords_up)[0])) or any(np.isnan(self.rxarm.world_to_joint(w_coords_down)[0]))) and phi >= 80):
-            print("trying phi = ", phi)
+            # print("trying phi = ", phi)
             phi -= 5
             w_coords[3] = phi
 
@@ -463,11 +468,15 @@ class StateMachine():
                 w_coords_down[2] += 20.0
 
 
+        # TODO: Not this, manually adjust z for bad calibration in stack
+        if(w_coords_down[0] > 315):
+            w_coords_down[2] = w_coords_down[2] + 10
+
         joint_angles_up = self.rxarm.world_to_joint(w_coords_up)
-        print("first = ", joint_angles_up)
+        # print("first = ", joint_angles_up)
 
         joint_angles_up.flatten()
-        print("second = ", joint_angles_up)
+        # print("second = ", joint_angles_up)
 
         if phi == phi_i:
             block_rot = clamp(D2R * (block_theta + 90 + R2D * (joint_angles_up[0][0])))
@@ -475,7 +484,7 @@ class StateMachine():
             block_rot = 0
         # if block_rot < 0:
         #     block_rot += 180
-        print("block_rot = ", block_rot)
+        # print("block_rot = ", block_rot)
         joint_angles_up = np.append(joint_angles_up, block_rot)
 
         self.waypoints.arm_coords.append(joint_angles_up)
@@ -495,17 +504,17 @@ class StateMachine():
 
         # Create mask for placement
         # TODO: Convert world back to camera coords
-        if(1):
+        if(mask_placement):
+            print("PLACING MASK !!!!!!!!!")
+            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             if(w_coords[0] < 0):
-                left_disp = 1.4
-                right_disp = 1.0
+                disp = 1.4
             else:
-                left_disp = 0.7
-                right_disp = 1.8
+                disp = 1.4
             if(block_size == "small"):
-                msk = Mask(int(c_coords[0]-(15 * left_disp)), int(c_coords[1]-15), int(c_coords[0]+(15*right_disp)), int(c_coords[1]+15))
+                msk = Mask(int(c_coords[0]-disp), int(c_coords[1]), 50)
             else:
-                msk = Mask(int(c_coords[0]-(40*left_disp)), int(c_coords[1]-40), int(c_coords[0]+(30*right_disp)), int(c_coords[1]+30))
+                msk = Mask(int(c_coords[0]-disp), int(c_coords[1]), 100)
             self.camera.mask_list.append(msk)
 
         self.execute()
@@ -513,27 +522,130 @@ class StateMachine():
     def pick_sort(self):
 
         # Image coordinates
-        destination_right_uv = [[802,487,967],[155,-30,0],[205,-110,0]]
-        destination_left_uv = [[-155,50,0],[-155,-30,0],[-205,-110,0]]
+        destination_right_uv = [[805,485,973],[805,545,973],[805, 585,973],[865,485,973],[865,545,973],[865, 585,973],[925,485,973],[925,545,973],[925, 585,973]]
+        destination_left_uv = [[515,485,973],[515,545,973],[515, 585,973],[455,485,973],[455,545,973],[455, 585,973],[395,485,973],[395,545,973],[395, 585,973]]
 
-        destination_right = [[155,50,0],[155,-30,0],[205,-110,0]]
-        destination_left = [[-155,50,0],[-155,-30,0],[-205,-110,0]]
+        destination_right = [list(self.camera.u_v_d_to_world(dest[0], dest[1], dest[2])) for dest in destination_right_uv]
+        destination_left = [list(self.camera.u_v_d_to_world(dest[0], dest[1], dest[2])) for dest in destination_left_uv]
+
+        print(destination_right_uv)
+        print(destination_right)
+        print(destination_left_uv)
+        print(destination_left)
+        #destination_right = [[155,50,0],[155,-30,0],[205,-110,0]]
+        #destination_left = [[-155,50,0],[-155,-30,0],[-205,-110,0]]
+
         self.camera.blockDetector()
 
         i = 0
         j = 0
-        for block in self.camera.block_detections:
-            w_coords = block.coord
-            print(w_coords)
-            self.pick(w_coords, block.theta)
-            if(block.size == "big"):
-                self.place(destination_right[i], 0)
-                i += 1
-            else:
-                self.place(destination_left[j], 0)
-                j += 1
-        self.rxarm.sleep()
 
+        while len(self.camera.block_detections) > 0:
+            for block in self.camera.block_detections:
+                w_coords = block.coord
+                print(w_coords)
+                self.pick(block.size, w_coords, block.theta)
+                if(block.size == "big"):
+                    self.place(destination_right_uv[i], destination_right[i], 0, 1, block.size)
+                    i += 1
+                else:
+                    self.place(destination_left_uv[j], destination_left[j], 0, 1, block.size)
+                    j += 1
+            self.rxarm.sleep()
+            rospy.sleep(2)
+            self.camera.blockDetector()
+            rospy.sleep(1)
+
+        self.camera.mask_list = []
+
+    # Event 2
+    def pick_stack(self):
+
+        # Image coordinates
+        destination_bases_uv = [[875,600,968],[975,510,963],[825,460,968]]
+        destination_buff_uv = [[515,485,968],[515,545,968],[515, 585,968],[455,485,968],[455,545,968],[455, 585,968],[395,485,968],[395,545,968],[395, 585,968]]
+
+        destination_bases = [list(self.camera.u_v_d_to_world(dest[0], dest[1], dest[2])) for dest in destination_bases_uv]
+        destination_buff = [list(self.camera.u_v_d_to_world(dest[0], dest[1], dest[2])) for dest in destination_buff_uv]
+
+        self.camera.blockDetector()
+        i = 0
+        j = 0
+        state = "stack_bigs"
+        block_detect_process = []
+        while len(self.camera.block_detections) > 0:
+            # Sort
+            for block in self.camera.block_detections:
+                if(block.size == "big"):
+                    block_detect_process.append(block)
+            for block in self.camera.block_detections:
+                if(block.size == "small"):
+                    block_detect_process.append(block)
+
+            # Change state
+            if(block_detect_process[0].size == "big"):
+                state = "stack_bigs"
+            print("HELLO !!!!!!!!!!!!!!!!!!!!")
+            print(block_detect_process[0].coord[2])
+            print(block_detect_process[0].size)
+            if(block_detect_process[0].coord[2] < 40 and block_detect_process[0].size == "small"):
+                print(block_detect_process[0].coord[2])
+                print(block_detect_process[0].size)
+                state = "stack_smalls"
+
+            if(state == "stack_bigs"):
+                for block in block_detect_process:
+                    w_coords = block.coord
+                    print(w_coords)
+                    # Grab all big blocks first to form the stack bases
+
+                    if(block.size == "big"):
+                        self.pick(block.size, w_coords, block.theta)
+                        self.place(destination_bases_uv[i%3], destination_bases[i%3], 0, 1, block.size)
+                        print("PLACING AT DESTINATION: ")
+                        print(destination_bases[i%3])
+                        destination_bases[i%3][2] = destination_bases[i%3][2] + 50
+                        print("NEW DESTINATION: ")
+                        print(destination_bases[i%3])
+                        i += 1
+                    elif(block.size == "small" and block.coord[1] > 120):
+                        self.pick(block.size, w_coords, block.theta)
+                        self.place(destination_buff_uv[j], destination_buff[j], 0, 0, block.size)
+                        j += 1
+
+            elif(state == "stack_smalls"):
+                print("I AM IN STACK SMALL STATE")
+                for block in block_detect_process:
+                    w_coords = block.coord
+                    print(w_coords)
+
+                    self.pick(block.size, w_coords, block.theta)
+                    self.place(destination_bases_uv[i%3], destination_bases[i%3], 0, 1, block.size)
+                    destination_bases[i%3][2] += 25
+                    i += 1
+            block_detect_process = []
+
+
+            self.rxarm.sleep()
+            rospy.sleep(2)
+            #
+            self.camera.blockDetector(660, 1200, 400, 700)
+            rospy.sleep(1)
+        print("I AM DONE, DELETING ALL MASKS !!!!!")
+        print("Uastohuaontshuntsoeahurcagpuoasneuhoaeust")
+        self.camera.mask_list = []
+
+        # Event 3
+        def line_up(self):
+            pass
+
+        # Event 4
+        def stack_high(self):
+            pass
+
+        # Event 5
+        def to_sky(self):
+            pass
 
 class StateMachineThread(QThread):
     """!

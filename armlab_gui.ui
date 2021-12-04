@@ -505,6 +505,46 @@
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="QPushButton" name="btnUser13">
+             <property name="text">
+              <string>USER 12</string>
+             </property>
+             <property name="autoRepeatDelay">
+              <number>300</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="btnUser14">
+             <property name="text">
+              <string>USER 12</string>
+             </property>
+             <property name="autoRepeatDelay">
+              <number>300</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="btnUser15">
+             <property name="text">
+              <string>USER 12</string>
+             </property>
+             <property name="autoRepeatDelay">
+              <number>300</number>
+             </property>
+            </widget>
+           </item>
+            <item>
+            <widget class="QPushButton" name="btnUser16">
+             <property name="text">
+              <string>USER 12</string>
+             </property>
+             <property name="autoRepeatDelay">
+              <number>300</number>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
          <item>

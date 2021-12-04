@@ -114,9 +114,16 @@ class Gui(QMainWindow):
         self.ui.btnUser10.clicked.connect(lambda: self.sm.pick_click())
         self.ui.btnUser11.setText('Place clicked location')
         self.ui.btnUser11.clicked.connect(lambda: self.sm.place_click())
-        self.ui.btnUser12.setText('PICK AND SORT')
+        self.ui.btnUser12.setText('E1: PICK AND SORT')
         self.ui.btnUser12.clicked.connect(lambda: self.sm.pick_sort())
-
+        self.ui.btnUser13.setText('E2: PICK AND STACK')
+        self.ui.btnUser13.clicked.connect(lambda: self.sm.pick_stack())
+        self.ui.btnUser14.setText('E3: LINE EM UP')
+        self.ui.btnUser14.clicked.connect(lambda: self.sm.line_up())
+        self.ui.btnUser15.setText('E4: STACK EM HIGH')
+        self.ui.btnUser15.clicked.connect(lambda: self.sm.stack_high())
+        self.ui.btnUser16.setText('E5: TO THE SKY')
+        self.ui.btnUser16.clicked.connect(lambda: self.sm.to_sky())
 
 
         # Sliders

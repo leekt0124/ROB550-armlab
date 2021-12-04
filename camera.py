@@ -20,11 +20,10 @@ from cv_bridge import CvBridge, CvBridgeError
 
 # Define block class for easy storage
 class Block():
-    def __init__(self, coords, theta, color, size, layer):
+    def __init__(self, coords, theta, color, size):
         # x,y,z
         self.coord = coords
         self.theta = theta
-        self.layer = layer
         self.color = color
         self.size = size
 
@@ -245,7 +244,7 @@ class Camera():
         w_coords = np.matmul(np.linalg.inv(self.extrinsic_matrix), c_coords)
         return w_coords[:3]
 
-    def blockDetector(self):
+    def blockDetector(self, l_x=0, r_x=0, t_y=0, b_y=0):
         """!
         @brief      Detect blocks from rgb
 
@@ -308,7 +307,7 @@ class Camera():
 
         # Mask given masks
         for msk in self.mask_list:
-            cv2.circle(mask, (msk.left_u, msk.top), (msk.right_u, msk.bot), 0, cv2.FILLED)
+            cv2.circle(mask, (msk.x_center, msk.y_center), msk.radius, 0, cv2.FILLED)
 
         # This section corrects the depth error and finds the first depth threshold
         depth_min = 10000
@@ -317,7 +316,7 @@ class Camera():
         for i in range(left_u,right_u):
             for j in range(top_v, bottom_v):
                 # Skip over the arm data
-                if(i > 565 and i < 755 and j > 380):
+                if((i > 565 and i < 755 and j > 380) or (i > l_x and i < r_x and j > t_y and j < b_y)):
                     continue
                 else:
                     # Correct the depth data
@@ -329,6 +328,8 @@ class Camera():
                         depth_y = i
 
         # Edge case of only small blocks left, normal thresh is too big and hits the ground
+        if(depth_min > 960):
+            return
         if(depth_min > 945):
             l1_upper = 943
             l1_lower = 957
@@ -337,13 +338,13 @@ class Camera():
             l1_lower = depth_min + 20 + d_err
             l1_upper = depth_min - d_err
 
-        # print("Depth min:")
-        # print(depth_min)
-        # print("depth min coords")
-        # print(str(depth_x) + ", " + str(depth_y))
-        # print("thresholds:")
-        # print(l1_lower)
-        # print(l1_upper)
+        print("Depth min:")
+        print(depth_min)
+        print("depth min coords")
+        print(str(depth_x) + ", " + str(depth_y))
+        print("thresholds:")
+        print(l1_lower)
+        print(l1_upper)
 
 
         # Calculate thresh for level 1
@@ -468,11 +469,11 @@ class Camera():
             #cv2.putText(self.BlocksDetectedFrame , str(int(theta)), (cx+50, cy), font, 0.5, (0,255,0), thickness=2)
             cv2.putText(self.BlocksDetectedFrame , str(int(area)), (cx+50, cy), font, 1.0, (0,255,0), thickness=2)
 
-            if(area > 1300):
-                self.block_detections.append(Block(self.u_v_d_to_world(cx,cy,cz), theta, color, "big", layer))
+            if(area > 1100):
+                self.block_detections.append(Block(self.u_v_d_to_world(cx,cy,cz), theta, color, "big"))
                 print(color, int(theta), cx, cy, "big", self.u_v_d_to_world(cx,cy,cz))
             else:
-                self.block_detections.append(Block(self.u_v_d_to_world(cx,cy,cz), theta, color, "small", layer))
+                self.block_detections.append(Block(self.u_v_d_to_world(cx,cy,cz), theta, color, "small"))
                 print(color, int(theta), cx, cy, "small", self.u_v_d_to_world(cx,cy,cz))
             i += 1
 
