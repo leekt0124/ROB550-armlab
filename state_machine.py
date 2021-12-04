@@ -16,6 +16,12 @@ from kinematics import clamp
 D2R = np.pi / 180.0
 R2D = 180.0 / np.pi
 
+class Mask():
+    def __init__(self, x_center, y_center, radius):
+        self.x_center = x_center
+        self.y_center = y_center
+        self.radius = radius
+
 class WaypointRecording():
     def __init__(self):
         self.arm_coords = []
@@ -419,10 +425,11 @@ class StateMachine():
         y = self.camera.last_click[1]
         z = self.camera.DepthFrameRaw[y][x]
         # from click get world coordinates
+        c_coords = [x,y,z]
         w_coords = self.camera.u_v_d_to_world(x,y,z)
-        self.place(w_coords)
+        self.place(c_coords, w_coords)
 
-    def place(self, w_coords, block_theta=0):
+    def place(self, c_coords, w_coords, block_theta=0, mask_placement=0, block_size="big"):
         # Append phi angle to w_coords
         phi_i = 175
         phi = phi_i
@@ -486,9 +493,28 @@ class StateMachine():
         self.waypoints.arm_coords.append(joint_angles_up)
         self.waypoints.gripper_state.append(1)
 
+        # Create mask for placement
+        # TODO: Convert world back to camera coords
+        if(1):
+            if(w_coords[0] < 0):
+                left_disp = 1.4
+                right_disp = 1.0
+            else:
+                left_disp = 0.7
+                right_disp = 1.8
+            if(block_size == "small"):
+                msk = Mask(int(c_coords[0]-(15 * left_disp)), int(c_coords[1]-15), int(c_coords[0]+(15*right_disp)), int(c_coords[1]+15))
+            else:
+                msk = Mask(int(c_coords[0]-(40*left_disp)), int(c_coords[1]-40), int(c_coords[0]+(30*right_disp)), int(c_coords[1]+30))
+            self.camera.mask_list.append(msk)
+
         self.execute()
 
     def pick_sort(self):
+
+        # Image coordinates
+        destination_right_uv = [[802,487,967],[155,-30,0],[205,-110,0]]
+        destination_left_uv = [[-155,50,0],[-155,-30,0],[-205,-110,0]]
 
         destination_right = [[155,50,0],[155,-30,0],[205,-110,0]]
         destination_left = [[-155,50,0],[-155,-30,0],[-205,-110,0]]
@@ -507,8 +533,6 @@ class StateMachine():
                 self.place(destination_left[j], 0)
                 j += 1
         self.rxarm.sleep()
-
-
 
 
 class StateMachineThread(QThread):

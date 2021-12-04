@@ -28,6 +28,13 @@ class Block():
         self.color = color
         self.size = size
 
+class Mask():
+    def __init__(self, left_u, top, right_u, bot):
+        self.left_u = left_u
+        self.top = top
+        self.right_u = right_u
+        self.bot = bot
+
 class Camera():
     """!
     @brief      This class describes a camera.
@@ -63,6 +70,7 @@ class Camera():
         """ block info """
         self.block_contours = np.array([])
         self.block_detections = []
+        self.mask_list = []
 
     def processVideoFrame(self):
         """!
@@ -291,44 +299,56 @@ class Camera():
         top_v = 135
         bottom_v = 715
 
-        for i in range(0,1280):
-            for j in range(0, 720):
-                depth_data[j][i] = depth_data[j][i] - self.depth_correction[j][i]
-
-
-        # Layer 1 threshold
-        # min - 25
-        # max - 38
-        # error terms +- 3
-        l1_min = 18
-        l1_max = 40
-        l1_error = 3
-
-        depth_mean = (depth_data[top_v][left_u] + depth_data[bottom_v][left_u] + depth_data[top_v][right_u] + depth_data[bottom_v][right_u])/4# 950#905
-
-
-        #print(depth_data[top_v][left_u])
-        #print(depth_data[bottom_v][left_u])
-        #print(depth_data[top_v][right_u])
-        #print(depth_data[bottom_v][right_u])
-
-        l1_lower = depth_mean - l1_min + l1_error
-        l1_upper = depth_mean - l1_max - l1_error
-
-        #print("generated thresholds:")
-        #print(l1_lower)
-        #print(l1_upper)
-        #print("~~~~~~")
-
-        #cv2.namedWindow("Threshold window", cv2.WINDOW_NORMAL)
         """mask out arm & outside board"""
         mask = np.zeros_like(depth_data, dtype=np.uint8)
         cv2.rectangle(mask, (left_u,top),(right_u,bottom_v), 255, cv2.FILLED)
         cv2.rectangle(mask, (575,390),(736,720), 0, cv2.FILLED)
         cv2.rectangle(self.BlocksDetectedFrame , (left_u,top),(right_u,bottom_v), (255, 0, 0), 2)
         cv2.rectangle(self.BlocksDetectedFrame , (575,390),(736,720), (255, 0, 0), 2)
+
+        # Mask given masks
+        for msk in self.mask_list:
+            cv2.circle(mask, (msk.left_u, msk.top), (msk.right_u, msk.bot), 0, cv2.FILLED)
+
+        # This section corrects the depth error and finds the first depth threshold
+        depth_min = 10000
+        depth_x = 0
+        depth_y = 0
+        for i in range(left_u,right_u):
+            for j in range(top_v, bottom_v):
+                # Skip over the arm data
+                if(i > 565 and i < 755 and j > 380):
+                    continue
+                else:
+                    # Correct the depth data
+                    depth_data[j][i] = depth_data[j][i] - self.depth_correction[j][i]
+                    # Find min depth value to begin variable thresholding
+                    if(depth_data[j][i] > 700 and depth_data[j][i] < depth_min):
+                        depth_min = depth_data[j][i]
+                        depth_x = j
+                        depth_y = i
+
+        # Edge case of only small blocks left, normal thresh is too big and hits the ground
+        if(depth_min > 945):
+            l1_upper = 943
+            l1_lower = 957
+        else:
+            d_err = 2
+            l1_lower = depth_min + 20 + d_err
+            l1_upper = depth_min - d_err
+
+        # print("Depth min:")
+        # print(depth_min)
+        # print("depth min coords")
+        # print(str(depth_x) + ", " + str(depth_y))
+        # print("thresholds:")
+        # print(l1_lower)
+        # print(l1_upper)
+
+
         # Calculate thresh for level 1
         l1_thresh = cv2.bitwise_and(cv2.inRange(depth_data, l1_upper, l1_lower), mask)
+
 
         # depending on your version of OpenCV, the following line could be:
         # contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -381,16 +401,16 @@ class Camera():
                 mask = np.zeros(data.shape[:2], dtype="uint8")
                 cv2.drawContours(mask, [contour], -1, 255, -1)
                 mean = cv2.mean(data, mask=mask)[:3]
-                print("RGB MEAN!~!!!!!!")
-                print(mean)
+#                print("RGB MEAN!~!!!!!!")
+#                print(mean)
                 min_dist = (np.inf, None)
                 for label in labels:
                     d = np.linalg.norm(label["color"] - np.array(mean))
                     if d < min_dist[0]:
                         min_dist = (d, label["id"])
 
-                print("found color: ")
-                print(min_dist[1])
+#                print("found color: ")
+#                print(min_dist[1])
                 if(min_dist[1] == "red" or min_dist[1] == "orange" or min_dist[1] == "yellow"):
                     return retrieve_area_color_hsv(hsv_image, contour, colors_hsv_ro)
                 elif((min_dist[1] == "green" or min_dist[1] == "blue") or min_dist[1] == "violet"):
@@ -401,15 +421,15 @@ class Camera():
             mask = np.zeros(data.shape[:2], dtype="uint8")
             cv2.drawContours(mask, [contour], -1, 255, -1)
             mean = cv2.mean(data, mask=mask)[:3]
-            print("HSV MEAN:")
-            print(mean)
+#            print("HSV MEAN:")
+#            print(mean)
             min_dist = (np.inf, None)
             for label in labels:
                 d = math.sqrt(abs(label["color"][0] * label["color"][0] - mean[0]*mean[0]))
                 if d < min_dist[0]:
                     min_dist = (d, label["id"])
-            print("Found min: ")
-            print(min_dist[1])
+#            print("Found min: ")
+#            print(min_dist[1])
             return min_dist[1]
 
         def is_contour_bad(c):
@@ -444,14 +464,11 @@ class Camera():
             # TODO: Might need to modify cz, using modified depth data now
             cz = self.DepthFrameRaw[cy][cx]
 
-
             cv2.putText(self.BlocksDetectedFrame , color, (cx-30, cy+40), font, 1.0, (0,0,0), thickness=2)
-            cv2.putText(self.BlocksDetectedFrame , str(int(theta)), (cx+50, cy), font, 0.5, (0,255,0), thickness=2)
-            #cv2.putText(self.BlocksDetectedFrame , str(int(area)), (cx+50, cy), font, 1.0, (0,255,0), thickness=2)
+            #cv2.putText(self.BlocksDetectedFrame , str(int(theta)), (cx+50, cy), font, 0.5, (0,255,0), thickness=2)
+            cv2.putText(self.BlocksDetectedFrame , str(int(area)), (cx+50, cy), font, 1.0, (0,255,0), thickness=2)
 
-
-            layer = 1
-            if(area > 1000):
+            if(area > 1300):
                 self.block_detections.append(Block(self.u_v_d_to_world(cx,cy,cz), theta, color, "big", layer))
                 print(color, int(theta), cx, cy, "big", self.u_v_d_to_world(cx,cy,cz))
             else:
