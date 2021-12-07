@@ -328,11 +328,11 @@ class Camera():
                         depth_y = i
 
         # Edge case of only small blocks left, normal thresh is too big and hits the ground
-        if(depth_min > 960):
+        if(depth_min > 963):
             return
         if(depth_min > 945):
             l1_upper = 943
-            l1_lower = 957
+            l1_lower = 960
         else:
             d_err = 2
             l1_lower = depth_min + 20 + d_err
@@ -435,7 +435,7 @@ class Camera():
 
         def is_contour_bad(c):
             # Check size
-            threshold_area = 400
+            threshold_area = 250
             area = cv2.contourArea(contour)
             if(area) < threshold_area:
                 return 1
