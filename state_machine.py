@@ -23,9 +23,9 @@ class Mask():
         self.radius = radius
 
 class WaypointRecording():
-    def __init__(self):
-        self.arm_coords = []
-        self.gripper_state = []
+    def __init__(self, arm_coords=[], gripper_state=[]):
+        self.arm_coords = arm_coords
+        self.gripper_state = gripper_state
 
 class StateMachine():
     """!
@@ -132,7 +132,7 @@ class StateMachine():
         self.current_state = "estop"
         self.rxarm.disable_torque()
 
-    def execute(self, k_move=1.0, k_accel=1.0/10, min_move_time=0.5, sleep_time=0.1):
+    def execute(self, k_move=1.0, k_accel=1.0/5, min_move_time=0.8, sleep_time=0.1):
         """!
         @brief      Go through all waypoints
         TODO: Implement this function to execute a waypoint plan
@@ -172,11 +172,13 @@ class StateMachine():
             self.rxarm.set_moving_time(moving_time)# Do set moving time
             self.rxarm.set_accel_time(accel_time)
             self.rxarm.set_positions(next_position)
+            # TODO: Maybe uncomment this if no work
             rospy.sleep(moving_time)
             if(self.waypoints.gripper_state[i]):
                 self.rxarm.open_gripper()
             else:
                 self.rxarm.close_gripper()
+            # TODO: Maybe uncomment this if no work
             rospy.sleep(sleep_time)
         self.next_state = "idle"
         self.clear_waypoints()
@@ -311,6 +313,7 @@ class StateMachine():
         self.next_state = "idle"
 
     def add_waypoint(self):
+
         self.waypoints.arm_coords.append(self.rxarm.get_positions())
         self.waypoints.gripper_state.append(self.gripper_state)
         print(self.waypoints.arm_coords)
@@ -349,7 +352,7 @@ class StateMachine():
 
         self.pick("big",w_coords)
 
-    def pick(self, block_size, w_coords, block_theta=0, height=150,k_move=0.6, k_accel=1.0, min_move_time=0.5):
+    def pick(self, block_size, w_coords, block_theta=0, height=150,k_move=0.8, k_accel=1.0, min_move_time=0.5):
         # Append phi angle to w_coords
 
         phi_i = 175
@@ -469,7 +472,7 @@ class StateMachine():
         w_coords = self.camera.u_v_d_to_world(x,y,z)
         self.place(c_coords, w_coords)
 
-    def place(self, c_coords, w_coords, block_theta=0, mask_placement=0, block_size="big", height=80.0, k_move=0.6, k_accel=1.0, min_move_time=1.0):
+    def place(self, c_coords, w_coords, block_theta=0, mask_placement=0, block_size="big", height=80.0, k_move=0.8, k_accel=1.0, min_move_time=1.0):
         # Append phi angle to w_coords
         phi_i = 175
         phi_up = phi_i
@@ -736,16 +739,91 @@ class StateMachine():
         # Event 3
     def line_up(self):
         # Image coordinates
+        # Fixed waypoint for neat stacking
+
+
+
+        # big_waypoints = [
+        #     WaypointRecording([
+        #         [-0.398835  ,  0.27304858,  0.44945639, -1.73339832, -0.37275735],
+        #         [-0.53229135,  0.73937875,  0.57370883, -1.51710701, -0.50467968],
+        #         [-0.398835  ,  0.27304858,  0.44945639, -1.73339832, -0.37275735]
+        #     ], [0,1,1]),
+        #     WaypointRecording([
+        #         [-0.53229135,  0.73937875,  0.57370883, -1.51710701, -0.50467968],
+        #         [-0.56757289,  0.23623304,  0.40650493, -1.69351482, -0.51848555],
+        #         [-0.53229135,  0.73937875,  0.57370883, -1.51710701, -0.50467968]
+        #     ], [0,1,1]),
+        #     WaypointRecording([
+        #         [-0.6304661 ,  0.29299033,  0.37582532, -1.64749539, -0.56910688],
+        #         [-0.61359233,  0.44332045,  0.10277671, -1.29928172, -0.57217485],
+        #         [-0.6304661 ,  0.29299033,  0.37582532, -1.64749539, -0.56910688]
+        #     ], [0,1,1]),
+        #     WaypointRecording([
+        #         [-0.74704868,  0.08130098,  0.10277671, -1.59840798, -0.7056312 ],
+        #         [-0.72864091,  0.23623304, -0.21168935, -1.20724297, -0.69642729],
+        #         [-0.74704868,  0.08130098,  0.10277671, -1.59840798, -0.7056312 ]
+        #     ], [0,1,1]),
+        #     WaypointRecording([
+        #         [-0.86056322, -0.02607767, -0.20401946, -1.44040799, -0.8620972 ],
+        #         [-0.86516517,  0.11965051, -0.4555923 , -1.04003906, -0.86516517],
+        #         [-0.86056322, -0.02607767, -0.20401946, -1.44040799, -0.8620972 ]
+        #     ], [0,1,1]),
+        #     WaypointRecording([
+        #         [-1.03390312, -0.19174761, -0.50007772, -1.26553416, -1.0262332 ],
+        #         [-1.04157293, -0.06596117, -0.67341757, -0.95567006, -1.02163124],
+        #         [-1.03390312, -0.19174761, -0.50007772, -1.26553416, -1.0262332 ]
+        #     ], [0,1,1]),
+        #     WaypointRecording([
+        #         [-1.30695164, -0.33133987, -0.5767768 , -1.29007792, -1.27013612],
+        #         [-1.30695164, -0.14112623, -0.74091274, -0.9909516 , -1.28087401],
+        #         [-1.30695164, -0.33133987, -0.5767768 , -1.29007792, -1.27013612]
+        #     ], [0,1,1])
+        # ]
+
+        # small_waypoints = [
+        #     [
+        #         [],
+        #         [],
+        #         []
+        #     ],
+        #     [
+        #         [],
+        #         [],
+        #         []
+        #     ],
+        #     [
+        #         [],
+        #         [],
+        #         []
+        #     ],
+        #     [
+        #         [],
+        #         [],
+        #         []
+        #     ],
+        #     [
+        #         [],
+        #         [],
+        #         []
+        #     ],
+        #     [
+        #         [],
+        #         [],
+        #         []
+        #     ],
+        # ]
+
         #intermediate_uv = [[515,485,973],[515,545,973],[515, 585,973],[455,485,973],[455,545,973],[455, 585,973],[395,485,973],[395,545,973],[395, 585,973],
         #                    [515,425,973],[515,365,973],[515, 305,973],[455,425,973],[455,365,973],[455, 305,973],[395,425,973],[395,365,973],[395, 305,973]]
-        x_init = 300
+        x_init = 510
         x = x_init
-        y = 270
+        y = 290
         z = 968
         depthFrame = self.camera.DepthFrameRaw
 
         intermediate_uv = []
-        for i in range(8):
+        for i in range(6):
             for j in range(3):
                 # Check surrounding depth to see if location is clear
                 depthCheck = 1
@@ -760,9 +838,9 @@ class StateMachine():
                 # If good location, append
                 if(depthCheck == 1):
                     intermediate_uv.append([x,y,z])
-                x += 50
+                x -= 80
             x = x_init
-            y += 50
+            y += 80
 
         intermediate = [list(self.camera.u_v_d_to_world(dest[0], dest[1], dest[2])) for dest in intermediate_uv]
 
@@ -774,10 +852,13 @@ class StateMachine():
         # Process big and small blocks, unstack them and place them on layer 1 away from destination point
         while len(self.camera.block_detections) > 0:
             for block in self.camera.block_detections:
+                #  TODO
+                # If in first layer and already in buffer, skip it
+                # if(block.coord[0] > <~> and block.coord[1] < <~> and block.coord[2] < 42)
                 w_coords = block.coord
                 print(w_coords)
-                self.pick(block.size, w_coords, block.theta)
-                self.place(intermediate_uv[i], intermediate[i], 0, 1, block.size, height=150)
+                self.pick(block.size, w_coords, block.theta, k_move=1.4, k_accel=(1.0/6.0))
+                self.place(intermediate_uv[i], intermediate[i], 0, 1, block.size, height=150, k_move=1.4, k_accel=(1.0/6.0))
                 i += 1
 
             self.rxarm.sleep()
@@ -861,38 +942,285 @@ class StateMachine():
         small_sorted += [violet for violet in violet_small]
 
         # LINNING UP Blocks
-        u_big = 560
-        v_big = 345
+        u_big = 635
+        v_big = 355
         d_big = 968
-        step_big = 43
+        step_big = 48
 
-        u_small = 560
-        v_small = 245
+        u_small = 635
+        v_small = 265
         d_small = 968
-        step_small = 30
+        step_small = 38
 
         print("Starting Block Placement!")
         print(big_sorted)
         print(small_sorted)
 
+        i = 0
         for block in big_sorted:
             self.pick(block.size, block.coord, block.theta)
-            self.place([u_big, v_big, d_big], self.camera.u_v_d_to_world(u_big, v_big, d_big), 0, 1, block.size, height=150, k_move=1.4, k_accel=(1.0/4.0))
+            # self.waypoints = big_waypoints[i]
+            # self.execute()
+            # self.clear_waypoints()
+            self.place([u_big, v_big, d_big], self.camera.u_v_d_to_world(u_big, v_big, d_big), 0, 1, block.size, height=150, k_move=2.0, k_accel=(1.0/6.0))
             u_big += step_big
 
         for block in small_sorted:
             self.pick(block.size, block.coord, block.theta)
-            self.place([u_small, v_small, d_small], self.camera.u_v_d_to_world(u_small, v_small, d_small), 0, 1, block.size, height=150, k_move=1.4, k_accel=(1.0/4.0))
+            self.place([u_small, v_small, d_small], self.camera.u_v_d_to_world(u_small, v_small, d_small), 0, 1, block.size, height=150, k_move=1.4, k_accel=(1.0/6.0))
             u_small += step_small
 
         self.rxarm.sleep()
         self.camera.mask_list = []
+        return
 
 
 
     # Event 4
     def stack_high(self):
-        pass
+        # Image coordinates
+        # Fixed waypoint for neat stacking
+
+
+
+        # big_waypoints = [
+        #     WaypointRecording([
+        #         [-0.398835  ,  0.27304858,  0.44945639, -1.73339832, -0.37275735],
+        #         [-0.53229135,  0.73937875,  0.57370883, -1.51710701, -0.50467968],
+        #         [-0.398835  ,  0.27304858,  0.44945639, -1.73339832, -0.37275735]
+        #     ], [0,1,1]),
+        #     WaypointRecording([
+        #         [-0.53229135,  0.73937875,  0.57370883, -1.51710701, -0.50467968],
+        #         [-0.56757289,  0.23623304,  0.40650493, -1.69351482, -0.51848555],
+        #         [-0.53229135,  0.73937875,  0.57370883, -1.51710701, -0.50467968]
+        #     ], [0,1,1]),
+        #     WaypointRecording([
+        #         [-0.6304661 ,  0.29299033,  0.37582532, -1.64749539, -0.56910688],
+        #         [-0.61359233,  0.44332045,  0.10277671, -1.29928172, -0.57217485],
+        #         [-0.6304661 ,  0.29299033,  0.37582532, -1.64749539, -0.56910688]
+        #     ], [0,1,1]),
+        #     WaypointRecording([
+        #         [-0.74704868,  0.08130098,  0.10277671, -1.59840798, -0.7056312 ],
+        #         [-0.72864091,  0.23623304, -0.21168935, -1.20724297, -0.69642729],
+        #         [-0.74704868,  0.08130098,  0.10277671, -1.59840798, -0.7056312 ]
+        #     ], [0,1,1]),
+        #     WaypointRecording([
+        #         [-0.86056322, -0.02607767, -0.20401946, -1.44040799, -0.8620972 ],
+        #         [-0.86516517,  0.11965051, -0.4555923 , -1.04003906, -0.86516517],
+        #         [-0.86056322, -0.02607767, -0.20401946, -1.44040799, -0.8620972 ]
+        #     ], [0,1,1]),
+        #     WaypointRecording([
+        #         [-1.03390312, -0.19174761, -0.50007772, -1.26553416, -1.0262332 ],
+        #         [-1.04157293, -0.06596117, -0.67341757, -0.95567006, -1.02163124],
+        #         [-1.03390312, -0.19174761, -0.50007772, -1.26553416, -1.0262332 ]
+        #     ], [0,1,1]),
+        #     WaypointRecording([
+        #         [-1.30695164, -0.33133987, -0.5767768 , -1.29007792, -1.27013612],
+        #         [-1.30695164, -0.14112623, -0.74091274, -0.9909516 , -1.28087401],
+        #         [-1.30695164, -0.33133987, -0.5767768 , -1.29007792, -1.27013612]
+        #     ], [0,1,1])
+        # ]
+
+        # small_waypoints = [
+        #     [
+        #         [],
+        #         [],
+        #         []
+        #     ],
+        #     [
+        #         [],
+        #         [],
+        #         []
+        #     ],
+        #     [
+        #         [],
+        #         [],
+        #         []
+        #     ],
+        #     [
+        #         [],
+        #         [],
+        #         []
+        #     ],
+        #     [
+        #         [],
+        #         [],
+        #         []
+        #     ],
+        #     [
+        #         [],
+        #         [],
+        #         []
+        #     ],
+        # ]
+
+        #intermediate_uv = [[515,485,973],[515,545,973],[515, 585,973],[455,485,973],[455,545,973],[455, 585,973],[395,485,973],[395,545,973],[395, 585,973],
+        #                    [515,425,973],[515,365,973],[515, 305,973],[455,425,973],[455,365,973],[455, 305,973],[395,425,973],[395,365,973],[395, 305,973]]
+        x_init = 540
+        x = x_init
+        y = 290
+        z = 968
+        depthFrame = self.camera.DepthFrameRaw
+
+        intermediate_uv = []
+        for i in range(6):
+            for j in range(3):
+                # Check surrounding depth to see if location is clear
+                depthCheck = 1
+                for q in range(48):
+                    for k in range(48):
+                        q_fac = q-24
+                        k_fac = k-24
+                        print("Checking x,y,depth: ")
+                        print("\tx: " + str(x+q_fac) + "y: " + str(y+k_fac) + "d: " + str(depthFrame[y+k_fac, x+q_fac]))
+                        if(depthFrame[y+k_fac, x+q_fac] < 963):
+                            depthCheck = 0
+                # If good location, append
+                if(depthCheck == 1):
+                    intermediate_uv.append([x,y,z])
+                x -= 80
+            x = x_init
+            y += 80
+
+        intermediate = [list(self.camera.u_v_d_to_world(dest[0], dest[1], dest[2])) for dest in intermediate_uv]
+
+        self.camera.blockDetector()
+
+        i = 0
+        j = 0
+
+        # Process big and small blocks, unstack them and place them on layer 1 away from destination point
+        while len(self.camera.block_detections) > 0:
+            for block in self.camera.block_detections:
+                # TODO
+                # If in first layer and already in buffer, skip it
+                # if(block.coord[0] > <~> and block.coord[1] < <~> and block.coord[2] < 42)
+                w_coords = block.coord
+                print(w_coords)
+                self.pick(block.size, w_coords, block.theta, k_move=1.4, k_accel=(1.0/6.0))
+                self.place(intermediate_uv[i], intermediate[i], 0, 1, block.size, height=150, k_move=1.4, k_accel=(1.0/6.0))
+                i += 1
+
+            self.rxarm.sleep()
+            rospy.sleep(2)
+            self.camera.blockDetector()
+            rospy.sleep(1)
+
+        self.camera.mask_list = []
+        self.camera.blockDetector()
+
+        big_blocks = []
+        small_blocks = []
+
+        # Separate Big from small blocks
+        for block in self.camera.block_detections:
+            if(block.size == "big"):
+                big_blocks.append(block)
+        for block in self.camera.block_detections:
+            if(block.size == "small"):
+                small_blocks.append(block)
+
+        # Sort by color
+        big_sorted = []
+        small_sorted = []
+
+        red_big = []
+        orange_big = []
+        yellow_big = []
+        green_big = []
+        blue_big = []
+        violet_big = []
+
+        red_small = []
+        orange_small = []
+        yellow_small = []
+        green_small = []
+        blue_small = []
+        violet_small = []
+
+        for block in big_blocks:
+            if (block.color == "red"):
+                red_big.append(block)
+            elif (block.color == "orange"):
+                orange_big.append(block)
+            elif (block.color == "yellow"):
+                yellow_big.append(block)
+            elif (block.color == "green"):
+                green_big.append(block)
+            elif (block.color == "blue"):
+                blue_big.append(block)
+            elif (block.color == "violet"):
+                violet_big.append(block)
+
+        big_sorted += [red for red in red_big]
+        big_sorted += [orange for orange in orange_big]
+        big_sorted += [yellow for yellow in yellow_big]
+        big_sorted += [green for green in green_big]
+        big_sorted += [blue for blue in blue_big]
+        big_sorted += [violet for violet in violet_big]
+
+
+        for block in small_blocks:
+            if (block.color == "red"):
+                red_small.append(block)
+            elif (block.color == "orange"):
+                orange_small.append(block)
+            elif (block.color == "yellow"):
+                yellow_small.append(block)
+            elif (block.color == "green"):
+                green_small.append(block)
+            elif (block.color == "blue"):
+                blue_small.append(block)
+            elif (block.color == "violet"):
+                violet_small.append(block)
+
+        small_sorted += [red for red in red_small]
+        small_sorted += [orange for orange in orange_small]
+        small_sorted += [yellow for yellow in yellow_small]
+        small_sorted += [green for green in green_small]
+        small_sorted += [blue for blue in blue_small]
+        small_sorted += [violet for violet in violet_small]
+
+        # LINNING UP Blocks
+        u_big = 780
+        v_big = 410
+        d_big = 968
+        step_big = 40
+        u_step_big = 4
+        v_step_big = 2
+
+        u_small = 775
+        v_small = 265
+        d_small = 968
+        step_small = 27
+        u_step_small = 3
+        v_step_small = 0
+
+        print("Starting Block Placement!")
+        print(big_sorted)
+        print(small_sorted)
+
+        i = 0
+        for block in big_sorted:
+            self.pick(block.size, block.coord, block.theta, k_move=2.0, k_accel=(1.0/6.0))
+            # self.waypoints = big_waypoints[i]
+            # self.execute()
+            # self.clear_waypoints()
+            self.place([u_big, v_big, d_big], self.camera.u_v_d_to_world(u_big, v_big, d_big), 0, 1, block.size, height=150, k_move=2.0, k_accel=(1.0/6.0))
+            d_big -= step_big
+            u_big += u_step_big
+            v_big += v_step_big
+
+        for block in small_sorted:
+            self.pick(block.size, block.coord, block.theta, k_move=2.0, k_accel=(1.0/6.0))
+            self.place([u_small, v_small, d_small], self.camera.u_v_d_to_world(u_small, v_small, d_small), 0, 1, block.size, height=150, k_move=1.4, k_accel=(1.0/6.0))
+            d_small -= step_small
+            u_small += u_step_small
+            v_small += v_step_small
+
+        self.rxarm.sleep()
+        self.camera.mask_list = []
+        return
 
     # Event 5 helper
     def tnr_place(self):
@@ -903,6 +1231,7 @@ class StateMachine():
     def to_sky(self):
         # Deconstruct block field
         # TODO: Add more spots as needed
+
         # Image coordinates
         destination_right_uv = [[805,485,973],[805,545,973],[805, 585,973],[865,485,973],[865,545,973],[865, 585,973],[925,485,973],[925,545,973],[925, 585,973]]
         destination_left_uv = [[515,485,973],[515,545,973],[515, 585,973],[455,485,973],[455,545,973],[455, 585,973],[395,485,973],[395,545,973],[395, 585,973]]
