@@ -894,8 +894,77 @@ class StateMachine():
     def stack_high(self):
         pass
 
+<<<<<<< HEAD
     # Event 5
     def to_sky(self):
+=======
+        # Event 5 helper
+        def tnr_place(self):
+            # reads from stored joint angles to place large block at specified index
+            pass
+
+        # Event 5
+        def to_sky(self):
+            # Deconstruct block field
+            # TODO: Add more spots as needed
+            # Image coordinates
+        destination_right_uv = [[805,485,973],[805,545,973],[805, 585,973],[865,485,973],[865,545,973],[865, 585,973],[925,485,973],[925,545,973],[925, 585,973]]
+        destination_left_uv = [[515,485,973],[515,545,973],[515, 585,973],[455,485,973],[455,545,973],[455, 585,973],[395,485,973],[395,545,973],[395, 585,973]]
+
+        destination_right = [list(self.camera.u_v_d_to_world(dest[0], dest[1], dest[2])) for dest in destination_right_uv]
+        destination_left = [list(self.camera.u_v_d_to_world(dest[0], dest[1], dest[2])) for dest in destination_left_uv]
+
+        self.camera.blockDetector()
+
+        i = 0
+        j = 0
+
+        # Clear off board and organize
+        while len(self.camera.block_detections) > 0:
+            for block in self.camera.block_detections:
+                w_coords = block.coord
+                print(w_coords)
+                self.pick(block.size, w_coords, block.theta)
+                if(block.size == "big"):
+                    if(i < len(destination_right)):
+                        self.place(destination_right_uv[i], destination_right[i], 0, 1, block.size)
+                        i += 1
+                    else:
+                        self.place(destination_left_uv[j], destination_left[j], 0, 1, block.size)
+                        j += 1
+                else:
+                    # Remove small block from field
+                    self.place()
+            self.rxarm.sleep()
+            rospy.sleep(2)
+            self.camera.blockDetector()
+            rospy.sleep(1)
+
+        # Clear masks to begin stacking blocks
+        self.camera.mask_list = []
+
+        self.camera.blockDetector()
+
+        # Clear off board and organize
+        i = 0
+        while len(self.camera.block_detections) > 0:
+            for block in self.camera.block_detections:
+                w_coords = block.coord
+                print(w_coords)
+                self.pick(block.size, w_coords, block.theta)
+                # TODO: Implement tnr_place to train arm to follow set coordinates in stack
+                self.tnr_place(i)
+                i = i + 1
+            self.rxarm.sleep()
+            rospy.sleep(2)
+            # TODO: Add in stack area to ignored space in detector
+            self.camera.blockDetector()
+            rospy.sleep(1)
+
+        # Clear masks to end
+        self.camera.mask_list = []
+
+>>>>>>> bf94757289c550b6567b42900b4097bbba9ccc9f
         pass
 
 class StateMachineThread(QThread):
