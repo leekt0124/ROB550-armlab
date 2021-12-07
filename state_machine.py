@@ -349,7 +349,7 @@ class StateMachine():
 
         self.pick("big",w_coords)
 
-    def pick(self, block_size, w_coords, block_theta=0, height=150,k_move=0.8, k_accel=1.0, min_move_time=0.5):
+    def pick(self, block_size, w_coords, block_theta=0, height=150,k_move=0.6, k_accel=1.0, min_move_time=0.5):
         # Append phi angle to w_coords
 
         phi_i = 175
@@ -469,7 +469,7 @@ class StateMachine():
         w_coords = self.camera.u_v_d_to_world(x,y,z)
         self.place(c_coords, w_coords)
 
-    def place(self, c_coords, w_coords, block_theta=0, mask_placement=0, block_size="big", height=80.0, k_move=0.8, k_accel=1.0, min_move_time=1.0):
+    def place(self, c_coords, w_coords, block_theta=0, mask_placement=0, block_size="big", height=80.0, k_move=0.6, k_accel=1.0, min_move_time=1.0):
         # Append phi angle to w_coords
         phi_i = 175
         phi_up = phi_i
@@ -894,20 +894,16 @@ class StateMachine():
     def stack_high(self):
         pass
 
-<<<<<<< HEAD
+    # Event 5 helper
+    def tnr_place(self):
+        # reads from stored joint angles to place large block at specified index
+        pass
+
     # Event 5
     def to_sky(self):
-=======
-        # Event 5 helper
-        def tnr_place(self):
-            # reads from stored joint angles to place large block at specified index
-            pass
-
-        # Event 5
-        def to_sky(self):
-            # Deconstruct block field
-            # TODO: Add more spots as needed
-            # Image coordinates
+        # Deconstruct block field
+        # TODO: Add more spots as needed
+        # Image coordinates
         destination_right_uv = [[805,485,973],[805,545,973],[805, 585,973],[865,485,973],[865,545,973],[865, 585,973],[925,485,973],[925,545,973],[925, 585,973]]
         destination_left_uv = [[515,485,973],[515,545,973],[515, 585,973],[455,485,973],[455,545,973],[455, 585,973],[395,485,973],[395,545,973],[395, 585,973]]
 
@@ -964,7 +960,6 @@ class StateMachine():
         # Clear masks to end
         self.camera.mask_list = []
 
->>>>>>> bf94757289c550b6567b42900b4097bbba9ccc9f
         pass
 
 class StateMachineThread(QThread):
