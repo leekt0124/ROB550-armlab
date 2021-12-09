@@ -367,6 +367,9 @@ class StateMachine():
         w_coords_down = w_coords.copy()
         w_coords_down = np.append(w_coords_down, phi_down)
 
+        # lower the down point for to the sky
+        w_coords_down[2] -= 15;
+
         w_coords_up_z = w_coords[2] + height
         w_coords_up[2] = w_coords_up_z
 
@@ -1322,16 +1325,20 @@ class StateMachine():
             self.pick(block.size, block.coord, block.theta)
             self.waypoints.arm_coords = [[0.0, -0.5, 0.0, 0.0, 0.0]]
             self.waypoints.gripper_state = [0]
-            self.execute()
+            self.execute(k_move=0.5, k_accel=3.0, min_move_time=0.8)
             self.place([u_big, v_big, d_big], self.camera.u_v_d_to_world(u_big, v_big, d_big), 0, 1, block.size, height=70, k_move=2.0, k_accel=(1.0/6.0), phi_i=85, not_rot=True)
             self.waypoints.arm_coords = [[0.0, -0.5, 0.0, 0.0, 0.0]]
             self.waypoints.gripper_state = [1]
-            self.execute()
+            self.execute(k_move=0.5, k_accel=3.0, min_move_time=0.8)
             d_big -= step_big
             u_big += u_step_big
             v_big += v_step_big
 
-        self.rxarm.sleep()
+        # self.rxarm.sleep()
+
+        self.waypoints.arm_coords = [[0.0, -103.0, -89.0, -45.0, 0.0]]
+        self.waypoints.gripper_state = [1]
+        self.execute(k_move=1.5, k_accel=3.0, min_move_time=0.8)
         self.camera.mask_list = []
         print("done working")
 
