@@ -1252,7 +1252,7 @@ class StateMachine():
             # self.waypoints = big_waypoints[i]
             # self.execute()
             # self.clear_waypoints()
-
+        '''
         x_init = 525
         x = x_init
         y = 315
@@ -1308,6 +1308,7 @@ class StateMachine():
 
         intermediate = [list(self.camera.u_v_d_to_world(dest[0], dest[1], dest[2])) for dest in intermediate_uv]
 
+
         self.camera.blockDetector()
 
         i = 0
@@ -1321,7 +1322,7 @@ class StateMachine():
                 # if(block.coord[0] > <~> and block.coord[1] < <~> and block.coord[2] < 42)
                 w_coords = block.coord
                 print(w_coords)
-                self.pick(block.size, w_coords, block.theta, k_move=0.6, k_accel=(1.0/4.0))
+                self.pick(block.size, w_coords, block.theta, k_move=0.8, k_accel=(1.0))
                 self.place(intermediate_uv[i], intermediate[i], 0, 1, block.size, height=150, k_move=0.6, k_accel=(1.0/4.0))
                 i += 1
 
@@ -1330,6 +1331,8 @@ class StateMachine():
             self.camera.blockDetector()
             rospy.sleep(1)
 
+
+        '''
         self.camera.mask_list = []
         self.camera.blockDetector()
 
@@ -1339,7 +1342,7 @@ class StateMachine():
 
         # LINNING UP Blocks
         u_big = 650
-        v_big = 180
+        v_big = 300
         d_big = 972
         step_big = 38
         u_step_big = 4
@@ -1349,12 +1352,15 @@ class StateMachine():
         i = 0
         for h, block in enumerate(self.camera.block_detections):
             # self.pick(block.size, block.coord, block.theta, k_move=2.0, k_accel=(1.0/6.0))
-            sleep_angle = -0.5 if h < 8 else -1.0
+            sleep_angle = -0.8 if h < 8 else -1.2
             self.pick(block.size, block.coord, block.theta)
             self.waypoints.arm_coords = [[0.0, sleep_angle, 0.0, 0.0, 0.0]]
             self.waypoints.gripper_state = [0]
-            self.execute(k_move=0.5, k_accel=3.0, min_move_time=0.8)
-            self.place([u_big, v_big, d_big], self.camera.u_v_d_to_world(u_big, v_big, d_big), 0, 1, block.size, height=70, k_move=2.0, k_accel=(1.0/6.0), phi_i=90, not_rot=True)
+            self.execute(k_move=0.7, k_accel=3.0, min_move_time=1.0)
+            if h < 6:
+                self.place([u_big, v_big, d_big], self.camera.u_v_d_to_world(u_big, v_big, d_big), 0, 1, block.size, height=70, k_move=2.0, k_accel=(1.0/6.0), phi_i=174)
+            else:
+                self.place([u_big, v_big, d_big], self.camera.u_v_d_to_world(u_big, v_big, d_big), 0, 1, block.size, height=70, k_move=2.0, k_accel=(1.0/6.0), phi_i=90, not_rot=True)
             self.waypoints.arm_coords = [[0.0, sleep_angle, 0.0, 0.0, 0.0]]
             self.waypoints.gripper_state = [1]
             self.execute(k_move=0.5, k_accel=3.0, min_move_time=0.8)
