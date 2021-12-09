@@ -823,9 +823,9 @@ class StateMachine():
 
         #intermediate_uv = [[515,485,973],[515,545,973],[515, 585,973],[455,485,973],[455,545,973],[455, 585,973],[395,485,973],[395,545,973],[395, 585,973],
         #                    [515,425,973],[515,365,973],[515, 305,973],[455,425,973],[455,365,973],[455, 305,973],[395,425,973],[395,365,973],[395, 305,973]]
-        x_init = 510
+        x_init = 540
         x = x_init
-        y = 290
+        y = 230
         z = 968
         depthFrame = self.camera.DepthFrameRaw
 
@@ -951,13 +951,13 @@ class StateMachine():
         # LINNING UP Blocks
         u_big = 635
         v_big = 355
-        d_big = 968
+        d_big = 970
         step_big = 48
 
         u_small = 635
         v_small = 265
-        d_small = 968
-        step_small = 38
+        d_small = 973
+        step_small = 33
 
         print("Starting Block Placement!")
         print(big_sorted)
@@ -965,7 +965,9 @@ class StateMachine():
 
         i = 0
         for block in big_sorted:
-            self.pick(block.size, block.coord, block.theta)
+            if((abs(block.theta) < 5) or ((abs(block.theta) > 85) and (abs(block.theta) < 95))):
+                block.theta = 0
+            self.pick(block.size, block.coord, block.theta, k_move=2.0, k_accel=(1.0/6.0))
             # self.waypoints = big_waypoints[i]
             # self.execute()
             # self.clear_waypoints()
@@ -973,8 +975,10 @@ class StateMachine():
             u_big += step_big
 
         for block in small_sorted:
-            self.pick(block.size, block.coord, block.theta)
-            self.place([u_small, v_small, d_small], self.camera.u_v_d_to_world(u_small, v_small, d_small), 0, 1, block.size, height=150, k_move=1.4, k_accel=(1.0/6.0))
+            if((abs(block.theta) > 5) or ((abs(block.theta) > 85) and (abs(block.theta) < 95))):
+                block.theta = 0
+            self.pick(block.size, block.coord, block.theta, k_move=2.0, k_accel=(1.0/6.0))
+            self.place([u_small, v_small, d_small], self.camera.u_v_d_to_world(u_small, v_small, d_small), 0, 1, block.size, height=150, k_move=2.0, k_accel=(1.0/6.0))
             u_small += step_small
 
         self.rxarm.sleep()
@@ -1191,7 +1195,7 @@ class StateMachine():
         # LINNING UP Blocks
         u_big = 780
         v_big = 410
-        d_big = 968
+        d_big = 965
         step_big = 40
         u_step_big = 4
         v_step_big = 2
@@ -1209,7 +1213,7 @@ class StateMachine():
 
         i = 0
         for block in big_sorted:
-            if((abs(block.theta) > 5) or ((abs(block.theta) > 85) and (abs(block.theta) < 95))):
+            if((abs(block.theta) <5) or ((abs(block.theta) > 85) and (abs(block.theta) < 95))):
                 block.theta = 0
 
             self.pick(block.size, block.coord, block.theta, k_move=2.0, k_accel=(1.0/6.0))
@@ -1300,8 +1304,8 @@ class StateMachine():
         # Begin the stacking
 
         # LINNING UP Blocks
-        u_big = 655
-        v_big = 240
+        u_big = 920
+        v_big = 555
         d_big = 968
         step_big = 40
         u_step_big = 4
