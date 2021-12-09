@@ -1252,15 +1252,42 @@ class StateMachine():
             # self.waypoints = big_waypoints[i]
             # self.execute()
             # self.clear_waypoints()
-        '''
-        x_init = 540
+
+        x_init = 525
         x = x_init
-        y = 290
+        y = 315
         z = 968
         depthFrame = self.camera.DepthFrameRaw
 
         intermediate_uv = []
-        for i in range(6):
+        for i in range(4):
+            for j in range(3):
+                # Check surrounding depth to see if location is clear
+                depthCheck = 1
+                for q in range(48):
+                    for k in range(48):
+                        q_fac = q-24
+                        k_fac = k-24
+                        print("Checking x,y,depth: ")
+                        print("\tx: " + str(x+q_fac) + "y: " + str(y+k_fac) + "d: " + str(depthFrame[y+k_fac, x+q_fac]))
+                        if(depthFrame[y+k_fac, x+q_fac] < 963):
+                            depthCheck = 0
+                # If good location, append
+                if(depthCheck == 1):
+                    intermediate_uv.append([x,y,z])
+                x -= 80
+            x = x_init
+            y += 80
+
+
+        x_init = 930
+        x = x_init
+        y = 315
+        z = 968
+        depthFrame = self.camera.DepthFrameRaw
+
+        # intermediate_uv = []
+        for i in range(4):
             for j in range(3):
                 # Check surrounding depth to see if location is clear
                 depthCheck = 1
@@ -1302,7 +1329,7 @@ class StateMachine():
             rospy.sleep(2)
             self.camera.blockDetector()
             rospy.sleep(1)
-        '''
+
         self.camera.mask_list = []
         self.camera.blockDetector()
 
@@ -1322,12 +1349,13 @@ class StateMachine():
         i = 0
         for h, block in enumerate(self.camera.block_detections):
             # self.pick(block.size, block.coord, block.theta, k_move=2.0, k_accel=(1.0/6.0))
+            sleep_angle = -0.5 if h < 8 else -1.0
             self.pick(block.size, block.coord, block.theta)
-            self.waypoints.arm_coords = [[0.0, -0.5, 0.0, 0.0, 0.0]]
+            self.waypoints.arm_coords = [[0.0, sleep_angle, 0.0, 0.0, 0.0]]
             self.waypoints.gripper_state = [0]
             self.execute(k_move=0.5, k_accel=3.0, min_move_time=0.8)
             self.place([u_big, v_big, d_big], self.camera.u_v_d_to_world(u_big, v_big, d_big), 0, 1, block.size, height=70, k_move=2.0, k_accel=(1.0/6.0), phi_i=90, not_rot=True)
-            self.waypoints.arm_coords = [[0.0, -0.5, 0.0, 0.0, 0.0]]
+            self.waypoints.arm_coords = [[0.0, sleep_angle, 0.0, 0.0, 0.0]]
             self.waypoints.gripper_state = [1]
             self.execute(k_move=0.5, k_accel=3.0, min_move_time=0.8)
 
