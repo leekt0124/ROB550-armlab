@@ -1249,7 +1249,7 @@ class StateMachine():
             # self.waypoints = big_waypoints[i]
             # self.execute()
             # self.clear_waypoints()
-
+        '''
         x_init = 540
         x = x_init
         y = 290
@@ -1299,7 +1299,7 @@ class StateMachine():
             rospy.sleep(2)
             self.camera.blockDetector()
             rospy.sleep(1)
-
+        '''
         self.camera.mask_list = []
         self.camera.blockDetector()
 
@@ -1308,9 +1308,9 @@ class StateMachine():
         # Begin the stacking
 
         # LINNING UP Blocks
-        u_big = 700
-        v_big = 280
-        d_big = 968
+        u_big = 650
+        v_big = 180
+        d_big = 972
         step_big = 40
         u_step_big = 4
         v_step_big = -8
@@ -1318,12 +1318,13 @@ class StateMachine():
         # Naively stack blocks a la event 4
         i = 0
         for block in self.camera.block_detections:
-            self.pick(block.size, block.coord, block.theta, k_move=2.0, k_accel=(1.0/6.0))
-            self.waypoints.arm_coords = [[0.0, -1.0, 0.0, 0.0, 0.0]]
+            # self.pick(block.size, block.coord, block.theta, k_move=2.0, k_accel=(1.0/6.0))
+            self.pick(block.size, block.coord, block.theta)
+            self.waypoints.arm_coords = [[0.0, -0.5, 0.0, 0.0, 0.0]]
             self.waypoints.gripper_state = [0]
             self.execute()
             self.place([u_big, v_big, d_big], self.camera.u_v_d_to_world(u_big, v_big, d_big), 0, 1, block.size, height=70, k_move=2.0, k_accel=(1.0/6.0), phi_i=85, not_rot=True)
-            self.waypoints.arm_coords = [[0.0, -1.0, 0.0, 0.0, 0.0]]
+            self.waypoints.arm_coords = [[0.0, -0.5, 0.0, 0.0, 0.0]]
             self.waypoints.gripper_state = [1]
             self.execute()
             d_big -= step_big
