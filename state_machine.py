@@ -132,7 +132,8 @@ class StateMachine():
         self.current_state = "estop"
         self.rxarm.disable_torque()
 
-    def execute(self, k_move=1.0, k_accel=1.0/5, min_move_time=0.8, sleep_time=0.1):
+    # TODO: change move time back to 0.8
+    def execute(self, k_move=1.0, k_accel=1.0/5, min_move_time=4.0, sleep_time=0.4):
         """!
         @brief      Go through all waypoints
         TODO: Implement this function to execute a waypoint plan
@@ -389,6 +390,7 @@ class StateMachine():
 #             if w_coords_down[2] < 5.0:
 #                 w_coords_down[2] += 20.0
 
+    # TODO: Commented this out to test, reverted to prior ik
         while (any(np.isnan(self.rxarm.world_to_joint(w_coords_up)[0])) and phi_up >= 5):
     #            print("trying phi = ", phi)
             phi_up -= 5
@@ -486,6 +488,7 @@ class StateMachine():
         w_coords_up_z = w_coords[2] + height
         w_coords_up[2] = w_coords_up_z
 
+    # TODO: Uncomment if needed
         while (any(np.isnan(self.rxarm.world_to_joint(w_coords_up)[0])) and phi_up >= 5):
     #            print("trying phi = ", phi)
             phi_up -= 5
@@ -524,18 +527,22 @@ class StateMachine():
 
         # w_coords_up[2] += height
 
-        # while ((any(np.isnan(self.rxarm.world_to_joint(w_coords_up)[0])) or any(np.isnan(self.rxarm.world_to_joint(w_coords_down)[0]))) and phi >= 80):
+        # while ((any(np.isnan(self.rxarm.world_to_joint(w_coords_up)[0])) or any(np.isnan(self.rxarm.world_to_joint(w_coords_down)[0]))) and phi_down >= 80):
         #     # print("trying phi = ", phi)
-        #     phi -= 5
-        #     w_coords[3] = phi
+        #     phi_down -= 5
 
         #     # Increase z by 30 mm (avoid hitting ground)
         #     w_coords_up = w_coords.copy()
         #     w_coords_down = w_coords.copy()
+        #     w_coords_up = w_coords[::]
+        #     w_coords_up = np.append(w_coords_up, phi_up)
+        #     w_coords_down = w_coords[::]
+        #     w_coords_down = np.append(w_coords_down, phi_down)
+        #     w_coords_down[3] = phi_down
         #     w_coords_up[2] += height
 
         #     if w_coords_down[2] < 5.0:
-        #         w_coords_down[2] += 20.0
+                # w_coords_down[2] += 20.0
 
 
         # # TODO: Not this, manually adjust z for bad calibration in stack
@@ -1192,9 +1199,9 @@ class StateMachine():
         u_small = 775
         v_small = 265
         d_small = 968
-        step_small = 27
+        step_small = 24
         u_step_small = 3
-        v_step_small = 0
+        v_step_small = -2
 
         print("Starting Block Placement!")
         print(big_sorted)
@@ -1202,6 +1209,9 @@ class StateMachine():
 
         i = 0
         for block in big_sorted:
+            if((abs(block.theta) > 5) or ((abs(block.theta) > 85) and (abs(block.theta) < 95))):
+                block.theta = 0
+
             self.pick(block.size, block.coord, block.theta, k_move=2.0, k_accel=(1.0/6.0))
             # self.waypoints = big_waypoints[i]
             # self.execute()
@@ -1220,7 +1230,6 @@ class StateMachine():
 
         self.rxarm.sleep()
         self.camera.mask_list = []
-        return
 
     # Event 5 helper
     def tnr_place(self):
@@ -1229,67 +1238,88 @@ class StateMachine():
 
     # Event 5
     def to_sky(self):
-        # Deconstruct block field
-        # TODO: Add more spots as needed
+            # self.waypoints = big_waypoints[i]
+            # self.execute()
+            # self.clear_waypoints()
 
-        # Image coordinates
-        destination_right_uv = [[805,485,973],[805,545,973],[805, 585,973],[865,485,973],[865,545,973],[865, 585,973],[925,485,973],[925,545,973],[925, 585,973]]
-        destination_left_uv = [[515,485,973],[515,545,973],[515, 585,973],[455,485,973],[455,545,973],[455, 585,973],[395,485,973],[395,545,973],[395, 585,973]]
+        x_init = 540
+        x = x_init
+        y = 290
+        z = 968
+        depthFrame = self.camera.DepthFrameRaw
 
-        destination_right = [list(self.camera.u_v_d_to_world(dest[0], dest[1], dest[2])) for dest in destination_right_uv]
-        destination_left = [list(self.camera.u_v_d_to_world(dest[0], dest[1], dest[2])) for dest in destination_left_uv]
+        intermediate_uv = []
+        for i in range(6):
+            for j in range(3):
+                # Check surrounding depth to see if location is clear
+                depthCheck = 1
+                for q in range(48):
+                    for k in range(48):
+                        q_fac = q-24
+                        k_fac = k-24
+                        print("Checking x,y,depth: ")
+                        print("\tx: " + str(x+q_fac) + "y: " + str(y+k_fac) + "d: " + str(depthFrame[y+k_fac, x+q_fac]))
+                        if(depthFrame[y+k_fac, x+q_fac] < 963):
+                            depthCheck = 0
+                # If good location, append
+                if(depthCheck == 1):
+                    intermediate_uv.append([x,y,z])
+                x -= 80
+            x = x_init
+            y += 80
+
+        intermediate = [list(self.camera.u_v_d_to_world(dest[0], dest[1], dest[2])) for dest in intermediate_uv]
 
         self.camera.blockDetector()
 
         i = 0
         j = 0
 
-        # Clear off board and organize
+        # Process big and small blocks, unstack them and place them on layer 1 away from destination point
         while len(self.camera.block_detections) > 0:
             for block in self.camera.block_detections:
+                # TODO
+                # If in first layer and already in buffer, skip it
+                # if(block.coord[0] > <~> and block.coord[1] < <~> and block.coord[2] < 42)
                 w_coords = block.coord
                 print(w_coords)
-                self.pick(block.size, w_coords, block.theta)
-                if(block.size == "big"):
-                    if(i < len(destination_right)):
-                        self.place(destination_right_uv[i], destination_right[i], 0, 1, block.size)
-                        i += 1
-                    else:
-                        self.place(destination_left_uv[j], destination_left[j], 0, 1, block.size)
-                        j += 1
-                else:
-                    # Remove small block from field
-                    self.place()
+                self.pick(block.size, w_coords, block.theta, k_move=0.6, k_accel=(1.0/4.0))
+                self.place(intermediate_uv[i], intermediate[i], 0, 1, block.size, height=150, k_move=0.6, k_accel=(1.0/4.0))
+                i += 1
+
             self.rxarm.sleep()
             rospy.sleep(2)
             self.camera.blockDetector()
             rospy.sleep(1)
 
-        # Clear masks to begin stacking blocks
         self.camera.mask_list = []
-
         self.camera.blockDetector()
 
-        # Clear off board and organize
+        print("done sorting ~~~~~~~")
+
+        # Begin the stacking
+
+        # LINNING UP Blocks
+        u_big = 655
+        v_big = 240
+        d_big = 968
+        step_big = 40
+        u_step_big = 4
+        v_step_big = 2
+
+        # Naively stack blocks a la event 4
         i = 0
-        while len(self.camera.block_detections) > 0:
-            for block in self.camera.block_detections:
-                w_coords = block.coord
-                print(w_coords)
-                self.pick(block.size, w_coords, block.theta)
-                # TODO: Implement tnr_place to train arm to follow set coordinates in stack
-                self.tnr_place(i)
-                i = i + 1
-            self.rxarm.sleep()
-            rospy.sleep(2)
-            # TODO: Add in stack area to ignored space in detector
-            self.camera.blockDetector()
-            rospy.sleep(1)
+        for block in self.camera.block_detections:
+            self.pick(block.size, block.coord, block.theta, k_move=2.0, k_accel=(1.0/6.0))
+            self.place([u_big, v_big, d_big], self.camera.u_v_d_to_world(u_big, v_big, d_big), 0, 1, block.size, height=150, k_move=2.0, k_accel=(1.0/6.0))
+            d_big -= step_big
+            u_big += u_step_big
+            v_big += v_step_big
 
-        # Clear masks to end
+        # self.rxarm.sleep()
         self.camera.mask_list = []
+        print("done working")
 
-        pass
 
 class StateMachineThread(QThread):
     """!
