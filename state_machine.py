@@ -1314,29 +1314,33 @@ class StateMachine():
         u_big = 650
         v_big = 180
         d_big = 972
-        step_big = 40
+        step_big = 38
         u_step_big = 4
         v_step_big = -8
 
         # Naively stack blocks a la event 4
         i = 0
-        for block in self.camera.block_detections:
+        for h, block in enumerate(self.camera.block_detections):
             # self.pick(block.size, block.coord, block.theta, k_move=2.0, k_accel=(1.0/6.0))
             self.pick(block.size, block.coord, block.theta)
             self.waypoints.arm_coords = [[0.0, -0.5, 0.0, 0.0, 0.0]]
             self.waypoints.gripper_state = [0]
             self.execute(k_move=0.5, k_accel=3.0, min_move_time=0.8)
-            self.place([u_big, v_big, d_big], self.camera.u_v_d_to_world(u_big, v_big, d_big), 0, 1, block.size, height=70, k_move=2.0, k_accel=(1.0/6.0), phi_i=85, not_rot=True)
+            self.place([u_big, v_big, d_big], self.camera.u_v_d_to_world(u_big, v_big, d_big), 0, 1, block.size, height=70, k_move=2.0, k_accel=(1.0/6.0), phi_i=90, not_rot=True)
             self.waypoints.arm_coords = [[0.0, -0.5, 0.0, 0.0, 0.0]]
             self.waypoints.gripper_state = [1]
             self.execute(k_move=0.5, k_accel=3.0, min_move_time=0.8)
+
             d_big -= step_big
             u_big += u_step_big
             v_big += v_step_big
 
+            if h >= 6:
+                v_big += v_step_big
+
         # self.rxarm.sleep()
 
-        self.waypoints.arm_coords = [[0.0, -103.0, -89.0, -45.0, 0.0]]
+        self.waypoints.arm_coords = [[0.0, -103.0 * D2R, -89.0 * D2R, -45.0 * D2R, 0.0]]
         self.waypoints.gripper_state = [1]
         self.execute(k_move=1.5, k_accel=3.0, min_move_time=0.8)
         self.camera.mask_list = []
