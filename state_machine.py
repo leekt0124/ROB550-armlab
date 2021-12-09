@@ -353,10 +353,10 @@ class StateMachine():
 
         self.pick("big",w_coords)
 
-    def pick(self, block_size, w_coords, block_theta=0, height=150,k_move=0.8, k_accel=1.0, min_move_time=0.5):
+    def pick(self, block_size, w_coords, block_theta=0, height=150,k_move=0.8, k_accel=1.0, min_move_time=0.5, phi_i=175):
         # Append phi angle to w_coords
 
-        phi_i = 175
+        # phi_i = 175
         phi_up = phi_i
         phi_down = phi_i
         # w_coords = np.append(w_coords, phi_i)
@@ -474,9 +474,9 @@ class StateMachine():
         w_coords = self.camera.u_v_d_to_world(x,y,z)
         self.place(c_coords, w_coords)
 
-    def place(self, c_coords, w_coords, block_theta=0, mask_placement=0, block_size="big", height=80.0, k_move=0.8, k_accel=1.0, min_move_time=1.0):
+    def place(self, c_coords, w_coords, block_theta=0, mask_placement=0, block_size="big", height=80.0, k_move=0.8, k_accel=1.0, min_move_time=1.0, phi_i=175):
         # Append phi angle to w_coords
-        phi_i = 175
+        # phi_i = 175
         phi_up = phi_i
         phi_down = phi_i
 
