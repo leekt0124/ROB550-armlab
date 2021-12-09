@@ -473,8 +473,9 @@ class StateMachine():
         c_coords = [x,y,z]
         w_coords = self.camera.u_v_d_to_world(x,y,z)
         self.place(c_coords, w_coords)
+        # self.place(c_coords, w_coords, phi_i=85, not_rot=True)
 
-    def place(self, c_coords, w_coords, block_theta=0, mask_placement=0, block_size="big", height=80.0, k_move=0.8, k_accel=1.0, min_move_time=1.0, phi_i=175):
+    def place(self, c_coords, w_coords, block_theta=0, mask_placement=0, block_size="big", height=80.0, k_move=0.8, k_accel=1.0, min_move_time=1.0, phi_i=175, not_rot=False):
         # Append phi angle to w_coords
         # phi_i = 175
         phi_up = phi_i
@@ -565,6 +566,9 @@ class StateMachine():
         if phi_down == phi_i:
             block_rot = clamp(D2R * (block_theta + 90 + R2D * (joint_angles_up[0][0])))
         else:
+            block_rot = 0
+
+        if not_rot:
             block_rot = 0
         # if block_rot < 0:
         #     block_rot += 180
@@ -1304,23 +1308,29 @@ class StateMachine():
         # Begin the stacking
 
         # LINNING UP Blocks
-        u_big = 920
-        v_big = 555
+        u_big = 700
+        v_big = 280
         d_big = 968
         step_big = 40
         u_step_big = 4
-        v_step_big = 2
+        v_step_big = -8
 
         # Naively stack blocks a la event 4
         i = 0
         for block in self.camera.block_detections:
             self.pick(block.size, block.coord, block.theta, k_move=2.0, k_accel=(1.0/6.0))
-            self.place([u_big, v_big, d_big], self.camera.u_v_d_to_world(u_big, v_big, d_big), 0, 1, block.size, height=150, k_move=2.0, k_accel=(1.0/6.0))
+            self.waypoints.arm_coords = [[0.0, -1.0, 0.0, 0.0, 0.0]]
+            self.waypoints.gripper_state = [0]
+            self.execute()
+            self.place([u_big, v_big, d_big], self.camera.u_v_d_to_world(u_big, v_big, d_big), 0, 1, block.size, height=70, k_move=2.0, k_accel=(1.0/6.0), phi_i=85, not_rot=True)
+            self.waypoints.arm_coords = [[0.0, -1.0, 0.0, 0.0, 0.0]]
+            self.waypoints.gripper_state = [1]
+            self.execute()
             d_big -= step_big
             u_big += u_step_big
             v_big += v_step_big
 
-        # self.rxarm.sleep()
+        self.rxarm.sleep()
         self.camera.mask_list = []
         print("done working")
 
