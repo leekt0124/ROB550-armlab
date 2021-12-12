@@ -545,6 +545,16 @@
              </property>
             </widget>
            </item>
+            <item>
+            <widget class="QPushButton" name="btnUser17">
+             <property name="text">
+              <string>USER 12</string>
+             </property>
+             <property name="autoRepeatDelay">
+              <number>300</number>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
          <item>

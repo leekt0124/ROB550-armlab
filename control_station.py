@@ -124,6 +124,8 @@ class Gui(QMainWindow):
         self.ui.btnUser15.clicked.connect(lambda: self.sm.stack_high())
         self.ui.btnUser16.setText('E5: TO THE SKY')
         self.ui.btnUser16.clicked.connect(lambda: self.sm.to_sky())
+        self.ui.btnUser17.setText('E6: ERROR MEASURE')
+        self.ui.btnUser17.clicked.connect(lambda: self.sm.error_measure())
 
 
         # Sliders

@@ -215,7 +215,7 @@ class StateMachine():
 
         (success, rot_vec, trans_vec) = cv2.solvePnP(self.camera.tag_locations.astype(np.float32), np.transpose(tag_position_i[:2, :]).astype(np.float32), self.camera.intrinsic_matrix,self.camera.dist_coefficient, flags = cv2.SOLVEPNP_ITERATIVE)
 
-
+        print(rot_vec)
         dst = cv2.Rodrigues(rot_vec)
         dst = np.array(dst[0])
 
@@ -280,7 +280,7 @@ class StateMachine():
         #print(q_rotation.transformation_matrix)
         R = np.array([[1, 0, 0, 0],[0 ,math.cos(angle), - math.sin(angle), 0],[0, math.sin(angle), math.cos(angle), 10], [0, 0, 0, 1]])
 
-
+        print(self.camera.extrinsic_matrix)
         self.camera.extrinsic_matrix = np.matmul(self.camera.extrinsic_matrix, np.linalg.inv(R))
         #
         #print(angle)
@@ -565,6 +565,8 @@ class StateMachine():
         self.waypoints.gripper_state.append(0)
         # print(self.waypoints.arm_coords)
 
+        print("In place: ", w_coords_down)
+
         joint_angles_down = self.rxarm.world_to_joint(w_coords_down)
 
         joint_angles_down.flatten()
@@ -575,6 +577,7 @@ class StateMachine():
 
         self.waypoints.arm_coords.append(joint_angles_up)
         self.waypoints.gripper_state.append(1)
+        print("In place: ", self.waypoints.arm_coords)
 
         # Create mask for placement
         # TODO: Convert world back to camera coords
@@ -628,7 +631,7 @@ class StateMachine():
         while len(self.camera.block_detections) > 0:
             for block in self.camera.block_detections:
                 w_coords = block.coord
-                print(w_coords)
+                print("w_coords", w_coords)
                 self.pick(block.size, w_coords, block.theta)
                 # if(is_far_away(w_coords, last_coords)):
                 #     avg_waypoint = []
@@ -961,6 +964,20 @@ class StateMachine():
         self.camera.mask_list = []
 
         pass
+
+    # Report measurement
+    def error_measure(self):
+        w_coords = np.array([250.0, 275.0, 50.0, 175])
+
+        joint_angles = self.rxarm.world_to_joint(w_coords)
+        joint_angles.flatten()
+        joint_angles = np.append(joint_angles, 0.0)
+
+        self.waypoints.arm_coords = [joint_angles]
+        self.waypoints.gripper_state = [0]
+        print(self.waypoints.arm_coords)
+        self.execute()
+
 
 class StateMachineThread(QThread):
     """!

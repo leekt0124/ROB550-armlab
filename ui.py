@@ -312,6 +312,11 @@ class Ui_MainWindow(object):
         self.btnUser16.setObjectName(_fromUtf8("btnUser16"))
         self.Group2.addWidget(self.btnUser16)
 
+        self.btnUser17 = QtGui.QPushButton(self.OutputFrame)
+        self.btnUser17.setAutoRepeatDelay(300)
+        self.btnUser17.setObjectName(_fromUtf8("btnUser17"))
+        self.Group2.addWidget(self.btnUser17)
+
         self.verticalLayout_5.addLayout(self.Group2)
         spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.verticalLayout_5.addItem(spacerItem)
