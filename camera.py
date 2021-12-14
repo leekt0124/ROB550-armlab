@@ -122,33 +122,6 @@ class Camera():
         for i in range(0,1280):
             for j in range(0,720):
                 self.depth_correction[j][i] = depth_data[j][i] - 973
-#        # Frame aligment
-#        prop_v = (depth_data[top_v][left_u] - depth_data[bottom_v][left_u])
-#        #prop_u = (depth_data[bottom_v][left_u] - depth_data[bottom_v][right_u])
-#        prop_u = (depth_data[top_v][left_u] - depth_data[top_v][right_u])
-#        #prop_u = (float(prop_u1) + float(prop_u2))/2.0
-#        range_v = abs(top_v - bottom_v)
-#        range_u = abs(left_u - right_u)
-
-#        opt = float(prop_u)/float(range_u)
-
-#        for i in range(left_u-1,right_u+1):
-#            for j in range(top_v-1, bottom_v+1):
-#                depth_data[j][i] = depth_data[j][i] + int(float(j-top_v)*opt)
-
-#        prop_v = (depth_data[top_v][left_u] - depth_data[bottom_v][left_u])
-#        #prop_u = (depth_data[bottom_v][left_u] - depth_data[bottom_v][right_u])
-#        prop_u = (depth_data[top_v][left_u] - depth_data[top_v][right_u])
-#        #prop_u = (float(prop_u1) + float(prop_u2))/2.0
-#        range_v = abs(top_v - bottom_v)
-#        range_u = abs(left_u - right_u)
-
-
-#        for i in range(left_u-1,right_u+1):
-#            for j in range(top_v-1, bottom_v+1):
-#                depth_data[j][i] = depth_data[j][i] + int(float(i-left_u)*opt)
-
-#        self.depth_mean = (depth_data[top_v][left_u] + depth_data[bottom_v][left_u] + depth_data[top_v][right_u] + depth_data[bottom_v][right_u])/4# 950#905
 
     def convertQtVideoFrame(self):
         """!

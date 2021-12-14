@@ -165,40 +165,11 @@ def IK_geometric(dh_params, pose):
                 configuration
     """
 
-    # R = np.array([[cos(phi), -sin(phi)][sin(phi), cos(phi)]])
-    # l1 = 200
-    # l2 = 250
-    # l3 = 174.15
-
-    # dx = pose[0]
-    # dy = pose[1]
-    # phi = pose[3]
-    # phi = D2R * phi
-
-    # x = dx - l3 * np.cos(phi)
-    # y = dy - l3 * np.sin(phi)
-
-    # r = x**2 + y**2
-    # x2 = (r - l1**2 - l2**2)/(2*l1*l2)
-    # y2 = np.sqrt(1 - x2**2)
-    # theta2 = np.arctan2(y2,x2)
-
-    # y1 = ((l1 + l2*x2)*dy - l2*y2*dx)/r
-    # x1 = ((l1 + l2*x2)*dx + l2*y2*dy)/r
-    # theta1 = np.arctan2(y1,x1)
-    # theta3 = phi - theta1 - theta2
-
-    # # dh_params[1][3] = theta1
-    # # dh_params[2][3] = theta2
-    # # dh_params[3][3] = theta3
-
     l6 = 174.15
     l2 = np.sqrt(200**2 + 50**2)
     l3 = 200
     d = 103.91
     l2_offset = np.arctan(1.0 / 4.0)
-    # print('l2_offset = ', l2_offset)
-    # print(l2_offset)
 
     xo = pose[0]
     yo = pose[1]
@@ -207,27 +178,18 @@ def IK_geometric(dh_params, pose):
 
     # Calculate R
     theta1 = np.arctan2(yo, xo) - np.pi / 2
-    # rot_z = np.array([[np.cos(theta1), -np.sin(theta1), 0], [np.sin(theta1), np.cos(theta1), 0], [0, 0, 1]])
-    # rot_x = np.array([[1, 0, 0], [0, np.cos(phi), -np.sin(phi)], [0, np.sin(phi), np.cos(phi)]])
+
     R = np.array([[-np.sin(phi) * np.sin(theta1), np.cos(theta1), -np.cos(phi) * np.sin(theta1)], [np.sin(phi) * np.cos(theta1), np.sin(theta1), np.cos(phi) * np.cos(theta1)], [np.cos(phi), 0, -np.sin(phi)]], dtype=float)
-    # print("R = ", R)
     r13 = R[0, 2]
     r23 = R[1, 2]
     r33 = R[2, 2]
     xc = xo - l6 * r13
     yc = yo - l6 * r23
     zc = zo - l6 * r33
-    # print("xo, yo, zo = ", xo, yo, zo)
-    # print("xc, yc, zc = ", xc, yc, zc)
+
     r = np.sqrt(xc ** 2 + yc ** 2)
     s = zc - d
 
-    # print("r, s = ", r, " ", s)
-    # print(r ** 2)
-    # print(s ** 2)
-    # print(l2 ** 2)
-    # print(l3 ** 2)
-    # print((r ** 2 + s ** 2 - l2 ** 2 - l3 ** 2) / (2 * l2 * l3))
     sign_list = [-1, 1]
     IK_output_list = []
     IK_angle_list = []
@@ -237,23 +199,12 @@ def IK_geometric(dh_params, pose):
 
         theta3 = sign * np.arccos((r ** 2 + s ** 2 - l2 ** 2 - l3 ** 2) / (2 * l2 * l3))
         theta2 = np.arctan2(s, r) - np.arctan2(l3 * np.sin(theta3), l2 + l3 * np.cos(theta3))
-        # print('ang 1 = ', np.arctan2(s, r))
-        # print('ang 2 = ', np.arctan2(l3 * np.sin(theta3), l2 + l3 * np.cos(theta3)))
-
         theta4 = - phi - (theta2 + theta3)
-        # print("theta1 = ", theta1 * R2D, " theta2 = ", theta2 * R2D, " theta3 = ", theta3 * R2D, " theta4 = ", theta4 * R2D)
-        # Transform from theta to joint angle
+
         angle1 = theta1
         angle2 = np.pi / 2.0 - theta2 - l2_offset
         angle3 = np.pi / 2.0 + theta3 - l2_offset
         angle4 = theta4
-        # print(np.pi / 2)
-
-        # print(angle1, angle2, angle3, angle4)
-
-        # IK_output = np.array([[angle1 * R2D, angle2 * R2D, angle3 * R2D, angle4 * R2D]])
-        # print(np.array([[angle1 * R2D, angle2 * R2D, angle3 * R2D, angle4 * R2D]]))
-
 
         IK_output = np.array([[clamp(angle1), clamp(angle2), clamp(angle3), clamp(angle4)]])
         IK_angle = np.array([[angle1 * R2D, angle2 * R2D, angle3 * R2D, angle4 * R2D]])
@@ -261,17 +212,9 @@ def IK_geometric(dh_params, pose):
         IK_output_list.append(IK_output)
         IK_angle_list.append(IK_angle)
 
-    # print("IK_angle_list = ", IK_angle_list)
-
     for output in IK_output_list:
         output_sum = np.sum(output)
         if (not np.isnan(output_sum)):
             return output
 
     return np.array([[float('NaN'), float('NaN'), float('NaN'), float('NaN')]])
-
-
-
-
-
-    return IK_output

@@ -52,21 +52,6 @@ class StateMachine():
         self.waypoints = WaypointRecording()
 
         self.phi_down_place = 0
-        # self.waypoints.arm_coords = [
-        #     [-np.pi/2,       -0.5,      -0.3,            0.0,       0.0],
-        #     [0.75*-np.pi/2,   0.5,      0.3,      0.0,       np.pi/2],
-        #     [0.5*-np.pi/2,   -0.5,     -0.3,     np.pi / 2,     0.0],
-        #     [0.25*-np.pi/2,   0.5,     0.3,     0.0,       np.pi/2],
-        #     [0.0,             0.0,      0.0,         0.0,     0.0],
-        #     [0.25*np.pi/2,   -0.5,      -0.3,      0.0,       np.pi/2],
-        #     [0.5*np.pi/2,     0.5,     0.3,     np.pi / 2,     0.0],
-        #     [0.75*np.pi/2,   -0.5,     -0.3,     0.0,       np.pi/2],
-        #     [np.pi/2,         0.5,     0.3,      0.0,     0.0],
-        #     [0.0,             0.0,     0.0,      0.0,     0.0]]
-
-        # self.waypoints.gripper_state = [1,1,1,1,1,1,1,1,1,1]
-
-
 
     def set_next_state(self, state):
         """!
@@ -207,9 +192,6 @@ class StateMachine():
 
         tag_position_i = np.dot(self.camera.intrinsic_matrix,tag_position_c).astype(np.float32)
 
-        #print("U V coordinates")
-        #print(tag_position_i)
-        #tag_position_i = tag_position_i
         self.status_message = "Calibration - Completed Calibration"
 
 
@@ -366,26 +348,6 @@ class StateMachine():
         w_coords_up_z = w_coords[2] + height
         w_coords_up[2] = w_coords_up_z
 
-        #         # TODO: Not this, manually adjust z for bad calibration in stack
-        # if(w_coords_down[0] < -350 or w_coords_down[0] > 350 or w_coords_down[1] > 370):
-        #     w_coords_down[2] = w_coords_down[2] + 10
-
-        # IK
-        # block_rot = 0;
-
-#         while ((any(np.isnan(self.rxarm.world_to_joint(w_coords_up)[0])) or any(np.isnan(self.rxarm.world_to_joint(w_coords_down)[0]))) and phi >= 80):
-# #            print("trying phi = ", phi)
-#             phi -= 5
-#             w_coords[3] = phi
-
-#             # Increase z by 30 mm (avoid hitting ground)
-#             w_coords_up = w_coords.copy()
-#             w_coords_down = w_coords.copy()
-#             w_coords_up[2] += height
-
-#             if w_coords_down[2] < 5.0:
-#                 w_coords_down[2] += 20.0
-
         while (any(np.isnan(self.rxarm.world_to_joint(w_coords_up)[0])) and phi_up >= 5):
     #            print("trying phi = ", phi)
             phi_up -= 5
@@ -401,28 +363,8 @@ class StateMachine():
             phi_down -= 5
             w_coords_down[3] = phi_down
 
-            # Increase z by 30 mm (avoid hitting ground)
-            # w_coords_up = w_coords.copy()
-            # w_coords_down = w_coords.copy()
-            # w_coords_up[2] += height
-
             if w_coords_down[2] < 5.0:
                 w_coords_down[2] += 20.0
-
-            # # TODO: Not this, manually adjust z for bad calibration in stack
-            # if(w_coords_down[0] < -350 or w_coords_down[0] > 350 or w_coords_down[1] > 370):
-            #     w_coords_down[2] = w_coords_down[2] + 10
-
-        # self.phi_down_place = phi_down
-
-
-        # Adjust pick height for small blocks
-#        if block_size == "small":
-#                w_coords_down[2]
-
-
-
-
 
         joint_angles_up = self.rxarm.world_to_joint(w_coords_up)
 
@@ -450,12 +392,6 @@ class StateMachine():
         self.waypoints.gripper_state.append(0)
 
         self.execute(k_move, k_accel, min_move_time, sleep_time=0.3);
-        # print(self.waypoints.arm_coords)
-
-        # define trajectory based on click
-        # use inverse kinematics to calculate joint position
-        # Add to join positions waypoint to self.waypoints
-        # make sure end effector closes at the end
 
 
     def place_click(self):
@@ -498,47 +434,8 @@ class StateMachine():
             phi_down -= 5
             w_coords_down[3] = phi_down
 
-            # Increase z by 30 mm (avoid hitting ground)
-            # w_coords_up = w_coords.copy()
-            # w_coords_down = w_coords.copy()
-            # w_coords_up[2] += height
-
             if w_coords_down[2] < 5.0:
                 w_coords_down[2] += 20.0
-
-
-
-        # # Append phi angle to w_coords
-        # phi_i = 175
-        # # phi_i = self.phi_down_place
-        # phi = phi_i
-        # w_coords = np.append(w_coords, phi)
-
-        # # Increase z by 30 mm (avoid hitting ground)
-        # w_coords_up = w_coords.copy()
-        # w_coords_down = w_coords.copy()
-        # # IK
-
-        # w_coords_up[2] += height
-
-        # while ((any(np.isnan(self.rxarm.world_to_joint(w_coords_up)[0])) or any(np.isnan(self.rxarm.world_to_joint(w_coords_down)[0]))) and phi >= 80):
-        #     # print("trying phi = ", phi)
-        #     phi -= 5
-        #     w_coords[3] = phi
-
-        #     # Increase z by 30 mm (avoid hitting ground)
-        #     w_coords_up = w_coords.copy()
-        #     w_coords_down = w_coords.copy()
-        #     w_coords_up[2] += height
-
-        #     if w_coords_down[2] < 5.0:
-        #         w_coords_down[2] += 20.0
-
-
-        # # TODO: Not this, manually adjust z for bad calibration in stack
-        # if(w_coords_down[0] < -350 or w_coords_down[0] > 350 or w_coords_down[1] > 370 or w_coords_down[1] < 0):
-        #     w_coords_down[2] = w_coords_down[2] + 10
-
 
         if block_size == "small":
                 w_coords_down[2] -= 5
@@ -596,15 +493,6 @@ class StateMachine():
 
         self.execute(k_move, k_accel, min_move_time, sleep_time=0.3);
 
-    # Figure out if far away
-    # def is_far_away(self, coord1, coord2, 400):
-    #     x_d = coord2[0] - coord1[0]
-    #     y_d = coord2[1] - coord1[1]
-
-    #     if(math.sqrt(x_d*x_d + y_d*y_d) > thresh):
-    #         return 1
-    #     return 0
-
     # Event 1
     def pick_sort(self):
 
@@ -619,8 +507,7 @@ class StateMachine():
         print(destination_right)
         print(destination_left_uv)
         print(destination_left)
-        #destination_right = [[155,50,0],[155,-30,0],[205,-110,0]]
-        #destination_left = [[-155,50,0],[-155,-30,0],[-205,-110,0]]
+
 
         self.camera.blockDetector()
 
@@ -633,12 +520,7 @@ class StateMachine():
                 w_coords = block.coord
                 print("w_coords", w_coords)
                 self.pick(block.size, w_coords, block.theta)
-                # if(is_far_away(w_coords, last_coords)):
-                #     avg_waypoint = []
-                #     avg_waypoint.append((w_coords[0] + last_coords[0]) / 2)
-                #     avg_waypoint.append((w_coords[1] + last_coords[1]) / 2)
-                #     avg_waypoint.append(150)
-                #     self.execute(avg_waypoint)
+
                 if(block.size == "big"):
                     self.place(destination_right_uv[i], destination_right[i], block_theta=90, mask_placement=1, block_size=block.size, height=150)
                     last_coords = destination_right[i]
